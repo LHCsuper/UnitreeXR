@@ -59,3 +59,25 @@ The workspace now includes dedicated script entry points for future Phase 1 and 
 **Next**
 
 Leave the script directories empty until a verified use case appears.
+
+### 14:58 - Phase 1 EXP-001 prepared
+
+**Action**
+
+Closed Phase 0, started Phase 1, and prepared EXP-001 for XR data pipeline validation.
+
+**Result**
+
+The project status now reflects Phase 1. EXP-001 documentation and a minimal diagnostic probe script are ready, but the probe has not been executed.
+
+**Files Changed**
+
+- AGENTS.md
+- docs/STATUS.md
+- docs/WORKLOG.md
+- docs/experiments/EXP-001_XR_DATA_PIPELINE.md
+- scripts/diagnostics/xr_stream_probe.py
+
+**Next**
+
+Run EXP-001 only when the XR runtime and PICO setup are ready for live observation.

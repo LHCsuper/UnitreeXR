@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 0 — Workspace Bootstrap
+Phase 1 — XR Data Pipeline Validation
 
 ## Hardware
 
@@ -21,16 +21,16 @@ Runtime:
 - Python module `xrobotoolkit_sdk` has been installed.
 - PICO has XRoboToolkit APK installed.
 - The APK can display Head / Controller / Hand tracking items.
-- The workspace is being initialized for long-term experiments.
+- The Phase 0 workspace skeleton has been initialized.
 
 ## Not Yet Verified
 
 - Whether Python can continuously receive real-time PICO Pose.
-- Pose position units.
-- World coordinate XYZ definitions.
+- Position unit.
+- XYZ directions.
 - Coordinate system handedness.
 - Tracking origin.
-- Quaternion array layout and rotation direction.
+- Quaternion convention.
 - Controller local frame.
 - Recenter behavior.
 - XRoboToolkit → Unitree mapping.

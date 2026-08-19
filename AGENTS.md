@@ -31,6 +31,8 @@ This file defines project-level rules for Cursor / AI agents working in this rep
 
 ## Current Scope
 
-Current phase is Phase 0 — Workspace Bootstrap.
+Current phase is Phase 1 — XR Data Pipeline Validation.
 
-Do not start PICO pose coordinate validation, Unitree integration, external repository cloning, package installation, or real robot control in this phase.
+EXP-001 may validate whether XR data can flow through `PICO 4 Ultra → XRoboToolkit → PC Service → xrobotoolkit_sdk → Python`.
+
+Do not start PICO pose coordinate calibration, Unitree integration, external repository cloning, package installation, or real robot control in this phase.
