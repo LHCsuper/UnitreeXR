@@ -1,0 +1,1 @@
+"""Calibration experiments and coordinate validation helpers."""
