@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 1 — XR Data Pipeline Validation
+Phase 2 — PICO Coordinate Calibration
 
 ## Hardware
 
@@ -28,14 +28,16 @@ Runtime:
 - Headset, left controller, and right controller poses are readable and change with physical movement.
 - All three poses are arrays of length 7.
 - `xrt.close()` executes normally.
+- XR position order is `[X, Y, Z]` for `pose[0]`, `pose[1]`, `pose[2]`.
+- XR position axes: `+X = right`, `+Y = up`, `+Z = backward` (`-Z = forward`).
+- XR position frame is right-handed.
+- XR position values are consistent with meters; EXP-002 was not a precision scale calibration.
 
 ## Not Yet Verified
 
-- Position unit.
-- XYZ directions.
-- Coordinate system handedness.
 - Tracking origin.
-- Quaternion convention.
+- Quaternion component order.
+- Quaternion rotation direction / transform semantics.
 - Controller local frame.
 - Recenter behavior.
 - XRoboToolkit → Unitree mapping.

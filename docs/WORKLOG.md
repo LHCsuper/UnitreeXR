@@ -101,3 +101,27 @@ XR data transport is verified end-to-end. Coordinate semantics remain unverified
 **Next**
 
 Defer coordinate semantics to Phase 2. Do not start EXP-002 in this step.
+
+### 15:58 - EXP-002 position frame validated
+
+**Action**
+
+Archived EXP-002 results for the XR position coordinate convention.
+
+**Result**
+
+Position order, axis directions, handedness, and unit consistency are
+recorded. Quaternion, tracking origin, controller local frame, recenter,
+and Unitree mapping remain unverified.
+
+**Files Changed**
+
+- docs/experiments/EXP-002_XR_POSITION_FRAME.md
+- docs/STATUS.md
+- docs/COORDINATE_SYSTEM.md
+- docs/WORKLOG.md
+
+**Next**
+
+Defer quaternion, tracking origin, controller local frame, recenter, and
+Unitree mapping to later experiments. Do not start EXP-003 in this step.
