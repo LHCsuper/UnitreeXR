@@ -66,30 +66,52 @@ EXP-001 must not perform:
 
 ## Raw Data
 
-Not collected yet.
+Live validation on PICO 4 Ultra through the local PC Service.
 
 ## Observations
 
-Unknown.
+- `xrt.init()` connects successfully to the local PC Service.
+- The Python SDK connects to PC Service at `127.0.0.1:60061`.
+- `xrt.get_time_stamp_ns()` returns a non-zero value that keeps changing.
+- Headset pose is readable and changes when the headset moves or rotates.
+- Right controller pose is readable and changes when the right controller moves or rotates.
+- Left controller pose is readable and changes when the left controller moves or rotates.
+- Headset, left controller, and right controller poses are all arrays of length 7.
+- `xrt.close()` executes normally.
 
 ## Analysis
 
-Unknown.
+The end-to-end XR data transport path is functional:
+
+```text
+PICO
+→ XRoboToolkit
+→ PC Service
+→ xrobotoolkit_sdk
+→ Python
+```
+
+Coordinate semantics were intentionally not analyzed in this experiment.
 
 ## Conclusion
 
-Unknown.
+PASS — XR data transport is verified; coordinate semantics remain unverified.
 
 ## Confidence
 
-Unknown.
+Confirmed for data transport only.
 
 ## Open Questions
 
-- Does `xrt.init()` succeed in the live runtime environment?
-- Does `xrt.get_time_stamp_ns()` return a non-zero changing timestamp?
-- Are all required pose APIs readable during runtime?
-- Are all returned pose values length 7?
+Coordinate semantics remain unverified and are deferred to Phase 2:
+
+- Position unit
+- XYZ directions
+- Handedness
+- Tracking origin
+- Quaternion convention
+- Controller local frame
+- Recenter behavior
 
 ## Related Files
 

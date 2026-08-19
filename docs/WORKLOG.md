@@ -81,3 +81,23 @@ The project status now reflects Phase 1. EXP-001 documentation and a minimal dia
 **Next**
 
 Run EXP-001 only when the XR runtime and PICO setup are ready for live observation.
+
+### 15:16 - EXP-001 validated PASS
+
+**Action**
+
+Archived the EXP-001 live validation results.
+
+**Result**
+
+XR data transport is verified end-to-end. Coordinate semantics remain unverified.
+
+**Files Changed**
+
+- docs/experiments/EXP-001_XR_DATA_PIPELINE.md
+- docs/STATUS.md
+- docs/WORKLOG.md
+
+**Next**
+
+Defer coordinate semantics to Phase 2. Do not start EXP-002 in this step.
