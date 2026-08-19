@@ -125,3 +125,59 @@ and Unitree mapping remain unverified.
 
 Defer quaternion, tracking origin, controller local frame, recenter, and
 Unitree mapping to later experiments. Do not start EXP-003 in this step.
+
+### Phase 2 PICO coordinate calibration closed
+
+**Action**
+
+- Consolidated PICO/XRoboToolkit raw pose convention.
+- Recorded quaternion order and transform semantics.
+- Recorded controller local-frame observations.
+- Recorded Device Tracking Origin behavior.
+- Recorded Home recenter behavior.
+- Recorded repeated Home vertical-axis validation.
+
+**Result**
+
+- Phase 2 closed.
+- Raw XR pose convention is sufficiently defined for downstream Unitree coordinate mapping.
+- Project moves to Phase 3 — Unitree Coordinate Mapping.
+
+**Experimental evidence**
+
+Home Y-axis deviation:
+
+- 1.0307 deg
+- 0.4118 deg
+- 1.0421 deg
+
+**Interpretation**
+
+- Tracking Origin vertical direction remains effectively unchanged under tested HMD downward/lateral tilt during recenter.
+- Home primarily redefines the horizontal forward reference.
+
+**Hypothesis**
+
+- Because PICO has inertial sensing capability and the vertical axis remains stable during recenter, gravity-related inertial information may be used as an important vertical reference.
+
+**Known limitation**
+
+- This does not prove that PICO directly sets +Y from the IMU gravity vector.
+- Exact IMU / camera / SLAM fusion remains unknown.
+
+**Next**
+
+Study:
+
+```text
+XRoboToolkit controller pose
+→ Unitree TeleData
+→ Unitree wrist target frame
+```
+
+**Files Changed**
+
+- AGENTS.md
+- docs/COORDINATE_SYSTEM.md
+- docs/STATUS.md
+- docs/WORKLOG.md

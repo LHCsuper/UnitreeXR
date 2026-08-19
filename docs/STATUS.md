@@ -2,7 +2,9 @@
 
 ## Current Phase
 
-Phase 2 — PICO Coordinate Calibration
+Phase 3 — Unitree Coordinate Mapping
+
+Phase 2 is closed.
 
 ## Hardware
 
@@ -28,16 +30,43 @@ Runtime:
 - Headset, left controller, and right controller poses are readable and change with physical movement.
 - All three poses are arrays of length 7.
 - `xrt.close()` executes normally.
-- XR position order is `[X, Y, Z]` for `pose[0]`, `pose[1]`, `pose[2]`.
-- XR position axes: `+X = right`, `+Y = up`, `+Z = backward` (`-Z = forward`).
-- XR position frame is right-handed.
-- XR position values are consistent with meters; EXP-002 was not a precision scale calibration.
+
+## Established — Raw XR Pose Convention
+
+- XR raw pose format: `[x, y, z, qx, qy, qz, qw]`.
+- Tracking-frame axis convention: `+X = right`, `+Y = up`, `+Z = backward` (`-Z = forward`).
+- Right-handedness.
+- Position unit consistency: values are consistent with meters; not a precision scale calibration.
+- Device Tracking Origin configuration from source inspection.
+- Quaternion component order: `[qx, qy, qz, qw]`.
+- Quaternion transform direction: `v_D = ^D R_device * v_device`.
+- Controller local-frame convention.
+- Home recenter behavior.
+- Home recenter vertical-axis experiment.
+
+Home recenter vertical-axis experiment results:
+
+```text
+Trial 1: 1.0307 deg
+Trial 2: 0.4118 deg
+Trial 3: 1.0421 deg
+```
+
+## Hypothesis
+
+PICO Runtime may use gravity-related inertial information as an important
+vertical reference.
+
+## Unknown
+
+- Exact PICO vertical-direction estimation.
+- Exact IMU / vision / SLAM fusion.
 
 ## Not Yet Verified
 
-- Tracking origin.
-- Quaternion component order.
-- Quaternion rotation direction / transform semantics.
-- Controller local frame.
-- Recenter behavior.
-- XRoboToolkit → Unitree mapping.
+- Precise Head local physical-frame calibration (if later required).
+- XRoboToolkit → Unitree coordinate mapping.
+- `^base T_xr`.
+- `^controller T_wrist`.
+- Offline Unitree wrist-target validation.
+- Real robot integration.

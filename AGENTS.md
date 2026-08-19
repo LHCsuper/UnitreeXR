@@ -31,8 +31,22 @@ This file defines project-level rules for Cursor / AI agents working in this rep
 
 ## Current Scope
 
-Current phase is Phase 1 — XR Data Pipeline Validation.
+Current phase is Phase 3 — Unitree Coordinate Mapping.
 
-EXP-001 may validate whether XR data can flow through `PICO 4 Ultra → XRoboToolkit → PC Service → xrobotoolkit_sdk → Python`.
+Allowed in this phase:
 
-Do not start PICO pose coordinate calibration, Unitree integration, external repository cloning, package installation, or real robot control in this phase.
+- Inspect Unitree `xr_teleoperate` source.
+- Inspect `TeleData` semantics.
+- Study the XR controller pose → Unitree wrist target mapping.
+- Derive explicit coordinate transforms.
+- Offline mathematical validation.
+- MeshCat / visualization validation.
+- Add traceable Phase 3 experiments.
+
+Still prohibited:
+
+- Controlling a real robot without explicit instruction.
+- Secretly adding coordinate conversion in the raw XR acquisition layer.
+- Writing Hypotheses as Facts.
+- Entering real robot integration before offline mapping validation is complete.
+- Modifying raw XR pose data using an unverified left/right mirror assumption.
