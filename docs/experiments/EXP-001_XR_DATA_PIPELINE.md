@@ -18,7 +18,7 @@ PICO
 
 ## Hypothesis
 
-Unknown. This experiment has not been executed yet.
+Before execution, the XR data pipeline status was unknown.
 
 ## Setup
 
