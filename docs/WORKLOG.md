@@ -181,3 +181,29 @@ XRoboToolkit controller pose
 - docs/COORDINATE_SYSTEM.md
 - docs/STATUS.md
 - docs/WORKLOG.md
+
+### S0 — `wheelloong_m2` URDF/MJCF arm FK consistency validated
+
+**Action**
+
+Executed and archived EXP-003, comparing direct torso-relative arm end-link
+forward kinematics from the checked-in URDF/Pinocchio and controlled
+MJCF/MuJoCo models.
+
+**Result**
+
+For five deterministic, within-limit configurations, the maximum measured
+errors were `9.254183423523e-14 m` and `4.132388077110e-13 rad`. The scoped
+arm FK is directly consistent; no fixed rotation, mirror, axis-swap, or
+compensation transform was used or indicated.
+
+**Files Changed**
+
+- experiments/validate_urdf_mujoco_fk.py
+- docs/experiments/EXP-003_WHEELLOONG_M2_FK_CONSISTENCY.md
+- docs/WORKLOG.md
+
+**Next**
+
+Keep any XR-to-robot coordinate mapping work separate from this validated
+model-consistency result.
