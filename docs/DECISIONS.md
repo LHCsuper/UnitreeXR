@@ -290,3 +290,33 @@ The architecture intentionally has no source queue, filtering, XR/PICO,
 coordinate adapter, hand retargeting, real robot, motor controller,
 trajectory generator, velocity/acceleration constraint, collision avoidance,
 torque policy, or wall-clock real-time guarantee.
+
+## DEC-011 — Keep XR source and robot-target adaptation explicitly abstract
+
+Status: Accepted
+
+### Context
+
+S2.1 consumes robot-side `^torso T_WL` / `^torso T_WR` targets, while future
+XR devices will produce controller poses in an independent tracking frame.
+No real device coordinate mapping is authorized or validated in this stage.
+
+### Decision
+
+Define `XRControllerPose` as the SDK-independent `^xr T_controller` data
+contract. Provide a fake 120 Hz source and a separate `XRAdapter.convert`
+interface. The first adapter implementation copies pose values under an
+explicit synthetic identity convention only, so fake samples can exercise the
+existing target buffer, IK, and MuJoCo loop.
+
+### Reason
+
+This fixes the extension point and keeps unverified XR-to-robot coordinate
+logic out of both source acquisition and the existing robot-side runtime.
+
+### Consequence
+
+S3.0 does not establish a PICO, XRoboToolkit, OpenXR, or real-device mapping;
+it contains no calibration, axis mapping, scale, offset, hand retargeting, or
+filtering. Any replacement of the fake identity convention requires a new,
+separately validated decision and experiment.

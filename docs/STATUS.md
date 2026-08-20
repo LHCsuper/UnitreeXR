@@ -164,6 +164,20 @@ Trial 3: 1.0421 deg
   velocity/acceleration limit, collision avoidance, torque policy, model
   edit, or robot-control path is added.
 
+## Established — `wheelloong_m2` Fake XR Adapter Abstraction
+
+- EXP-011 introduces an SDK-independent `XRControllerPose` contract for
+  `^xr T_controller`, a fake source at the shared 120 Hz target rate, and an
+  `XRAdapter` interface that emits Pinocchio robot target poses.
+- The current adapter is deliberately identity-copy only for synthetic test
+  data. It is not a PICO/XRoboToolkit/OpenXR convention, XR-to-torso
+  calibration, controller-to-wrist transform, axis mapping, scale, or offset.
+- A 2-second fake-source integration run delivered 240 XR sample pairs through
+  the adapter and S2.1 buffer, followed by 500 IK solves and 2000 physics
+  steps; final tracking matched the existing fake-signal baseline.
+- No PICO SDK, XRoboToolkit, OpenXR, coordinate calibration, hand retargeting,
+  filtering, real device, model edit, or robot-control path is added.
+
 ## Hypothesis
 
 PICO Runtime may use gravity-related inertial information as an important

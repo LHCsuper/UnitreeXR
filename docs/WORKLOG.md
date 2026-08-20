@@ -523,3 +523,45 @@ IK, named actuator writes, and MuJoCo physics at independent rates.
 
 Stop at S2.1. The runtime remains a fake-source MuJoCo simulation; do not
 connect XR or a robot without separately scoped work.
+
+### S3.0 — `wheelloong_m2` fake XR adapter abstraction established
+
+**Action**
+
+Added an SDK-independent XR controller pose type, deterministic fake XR
+source, and separate adapter interface. Integrated fake controller samples
+through the existing latest-value buffer, warm-started IK, and MuJoCo physics
+loop without changing robot-side runtime modules.
+
+**Result**
+
+- `XRControllerPose` explicitly represents `^xr T_controller`; its source and
+  adapter have no PICO, XRoboToolkit, OpenXR, or device dependency.
+- The fake source is called at the shared 120 Hz target ticks. In the recorded
+  two-second integration test it produced 240 sample pairs (480 controller
+  poses), which generated 240 target updates, 500 IK solves, and 2000 physics
+  steps.
+- The adapter uses an explicitly synthetic identity-copy convention only; it
+  is not coordinate calibration. Final simulated EE tracking remained the
+  S2.1 fake-signal baseline (`7.23 mm` left and `6.02 mm` right position
+  errors).
+- DEC-011 records the abstraction boundary. No real XR source, PICO SDK,
+  calibration, retargeting, scale, offset, filtering, or robot control was
+  added.
+
+**Files Changed**
+
+- src/wheelloong_m2/xr/__init__.py
+- src/wheelloong_m2/xr/types.py
+- src/wheelloong_m2/xr/source.py
+- src/wheelloong_m2/xr/adapter.py
+- experiments/test_wheelloong_m2_xr_adapter.py
+- docs/experiments/EXP-011_WHEELLOONG_M2_XR_ADAPTER.md
+- docs/DECISIONS.md
+- docs/STATUS.md
+- docs/WORKLOG.md
+
+**Next**
+
+Stop at S3.0. The adapter path is fake-source only; do not connect PICO or
+replace the identity test convention without separately scoped work.
