@@ -482,3 +482,44 @@ Pinocchio FK.
 
 Stop at S2.0. The loop is offline MuJoCo simulation only; do not attach XR or
 real robot control without separately scoped work.
+
+### S2.1 — `wheelloong_m2` multi-rate teleoperation simulation runtime established
+
+**Action**
+
+Added shared runtime frequency configuration, a latest-value dual-arm target
+buffer, and a simulation-time multi-rate scheduler. Added a fake SE(3)
+sinusoidal target source experiment that runs target updates, warm-started
+IK, named actuator writes, and MuJoCo physics at independent rates.
+
+**Result**
+
+- The deterministic two-second run recorded exactly 240 target updates,
+  500 IK solves, and 2000 physics steps: 120 Hz / 250 Hz / 1000 Hz in
+  simulation time.
+- IPOPT solve latency samples had `4.168258 ms` mean, `4.546778 ms` p95, and
+  `15.083930 ms` maximum wall-clock duration.
+- Final joint tracking norm was `2.110591184150e-02 rad`; final left/right
+  EE position residuals were `7.230049812038e-03 m` and
+  `6.023004265867e-03 m` under the changing source target.
+- DEC-010 records latest-value and simulation-time semantics. No XR/PICO,
+  adapter, hand retargeting, filtering, real robot, motor controller,
+  trajectory, velocity/acceleration, collision, torque, or model edit was
+  added.
+
+**Files Changed**
+
+- src/wheelloong_m2/simulation/runtime/__init__.py
+- src/wheelloong_m2/simulation/runtime/config.py
+- src/wheelloong_m2/simulation/runtime/target_buffer.py
+- src/wheelloong_m2/simulation/runtime/scheduler.py
+- experiments/test_wheelloong_m2_multirate_loop.py
+- docs/experiments/EXP-010_WHEELLOONG_M2_MULTIRATE_LOOP.md
+- docs/DECISIONS.md
+- docs/STATUS.md
+- docs/WORKLOG.md
+
+**Next**
+
+Stop at S2.1. The runtime remains a fake-source MuJoCo simulation; do not
+connect XR or a robot without separately scoped work.

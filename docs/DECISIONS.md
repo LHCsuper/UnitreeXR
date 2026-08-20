@@ -258,3 +258,35 @@ S2.0 is an offline MuJoCo position-control loop. It provides no real robot,
 XR/PICO, coordinate adapter, motor controller, trajectory, velocity or
 acceleration limit, collision avoidance, torque policy, or robot-control
 authority.
+
+## DEC-010 — Use latest-value targets and simulation-time scheduling for S2.1
+
+Status: Accepted
+
+### Context
+
+S2.0 established an offline IK-to-MuJoCo actuator loop, but applied one
+static target per test. Teleoperation-style simulation requires independent
+target, IK, and physics rates without replaying stale targets.
+
+### Decision
+
+Use shared 120 Hz target, 250 Hz IK, and 1000 Hz simulation configuration.
+Store exactly one timestamped left/right target pair in a latest-value buffer.
+Use a simulation-time accumulator scheduler with target processing before IK
+when both are due. On every IK tick, warm-start the existing solver from its
+last target configuration; on every physics tick, hold that configuration
+through the existing named MuJoCo position actuators.
+
+### Reason
+
+The design makes rate ownership, target freshness, and solver latency
+observable in deterministic offline simulation while retaining the already
+validated named actuator interface.
+
+### Consequence
+
+The architecture intentionally has no source queue, filtering, XR/PICO,
+coordinate adapter, hand retargeting, real robot, motor controller,
+trajectory generator, velocity/acceleration constraint, collision avoidance,
+torque policy, or wall-clock real-time guarantee.

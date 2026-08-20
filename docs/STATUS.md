@@ -145,6 +145,25 @@ Trial 3: 1.0421 deg
   velocity/acceleration limit, collision avoidance, torque policy, URDF/MJCF
   edit, or robot-control path.
 
+## Established — `wheelloong_m2` Multi-Rate Teleoperation Simulation Runtime
+
+- EXP-010 adds a latest-value-only dual-arm SE(3) target buffer and a
+  simulation-time scheduler using shared `120 Hz` target, `250 Hz` IK, and
+  `1000 Hz` MuJoCo physics configuration.
+- The deterministic 2-second fake-target run recorded exactly 240 target
+  updates, 500 IPOPT solves, and 2000 physics steps. Target updates precede
+  IK when both ticks are due; IK warm-starts from its last `q_arm` target.
+- Recorded IK solve latency was `4.168258 ms` mean, `4.546778 ms` p95, and
+  `15.083930 ms` maximum. These are offline solver wall-clock measurements,
+  not end-to-end teleoperation latency claims.
+- Final simulated joint tracking was `2.110591184150e-02 rad`; Pinocchio FK
+  measured left/right EE position errors of approximately `7.23 mm` / `6.02
+  mm` for the final changing-target state.
+- The runtime is simulation-only: no XR/PICO, coordinate adapter, hand
+  retargeting, filtering, real robot, motor controller, trajectory,
+  velocity/acceleration limit, collision avoidance, torque policy, model
+  edit, or robot-control path is added.
+
 ## Hypothesis
 
 PICO Runtime may use gravity-related inertial information as an important
