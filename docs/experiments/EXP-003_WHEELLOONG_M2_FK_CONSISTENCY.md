@@ -29,6 +29,20 @@ other compensation transform.
 - Tested joints: `left_arm_joint_1` through `left_arm_joint_7`, and
   `right_arm_joint_1` through `right_arm_joint_7`.
 
+## Runtime Environment
+
+Versions recorded at execution time (reproducibility metadata only; does not
+change the conclusion):
+
+```text
+Python version:     3.10.12
+Python executable:  /usr/bin/python3
+Pinocchio version:  3.4.0
+MuJoCo version:     3.10.0
+NumPy version:      1.26.4
+Platform:           Linux-6.8.0-136-generic-x86_64-with-glibc2.35
+```
+
 ## Procedure
 
 1. Parse both source files and require the 14 named arm joints and the three

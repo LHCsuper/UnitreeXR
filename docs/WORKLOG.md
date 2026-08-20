@@ -207,3 +207,35 @@ compensation transform was used or indicated.
 
 Keep any XR-to-robot coordinate mapping work separate from this validated
 model-consistency result.
+
+### S0.5 — `wheelloong_m2` end-effector frame candidates analyzed
+
+**Action**
+
+Extracted the left/right gripper kinematic structure from the URDF and MJCF,
+built a runtime-only frame-inspection script, and derived a geometric
+gripper-center candidate. Recorded as EXP-004.
+
+**Result**
+
+- `arm_link_7` is the wrist-roll joint frame, not the grasp center.
+- No explicit palm / gripper_base / tool_center link exists.
+- Four direct gripper joints mount distally to each `arm_link_7` (mean
+  offset `0.220210 m`).
+- Candidate grasp center: `^arm7 p = [-0.0365, ±0.21691, 0.0105]`.
+- Candidate orientation axes (directions only): `z` = joint axis, `x` =
+  closing, `y` = finger extension. Sign conventions remain Unknown.
+- No final EE frame was selected; no IK, XR, model, or coordinate-mapping
+  changes were made.
+
+**Files Changed**
+
+- experiments/inspect_wheelloong_m2_ee_frames.py
+- docs/experiments/EXP-004_WHEELLOONG_M2_EE_FRAME.md
+- docs/experiments/EXP-003_WHEELLOONG_M2_FK_CONSISTENCY.md
+- docs/WORKLOG.md
+
+**Next**
+
+Only after a robot-side/downstream authority definition or visual
+confirmation, finalize the EE frame and defer any IK work until then.
