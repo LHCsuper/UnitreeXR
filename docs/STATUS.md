@@ -52,6 +52,22 @@ Trial 2: 0.4118 deg
 Trial 3: 1.0421 deg
 ```
 
+## Established — `wheelloong_m2` Baseline Operational EE Frames
+
+- EXP-004/S0.5b defines logical teleoperation operational EE frames `W_L`
+  and `W_R` for later baseline arm IK.
+- Their origins are fixed gripper-root/palm-center operational points formed
+  from the mean of the four direct gripper root joint origins.
+- `+Y_W` means physical finger extension, `+Z_W` follows the positive direct
+  hinge axis, and `+X_W = y_W cross z_W`.
+- The derived left extension direction is approximately `+L7 Y`; the right
+  is approximately `-R7 Y`.
+- The frames are not calibrated fingertip TCPs.
+- Rotation orthogonality, determinant `+1`, and right-handed cross-product
+  checks pass offline.
+- No arm IK implementation, XR connection, model edit, or robot control has
+  been introduced.
+
 ## Hypothesis
 
 PICO Runtime may use gravity-related inertial information as an important

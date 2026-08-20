@@ -214,17 +214,19 @@ model-consistency result.
 
 Extracted the left/right gripper kinematic structure from the URDF and MJCF,
 built a runtime-only frame-inspection script, and derived a geometric
-gripper-center candidate. Recorded as EXP-004.
+gripper-root center candidate. Recorded as EXP-004.
 
 **Result**
 
-- `arm_link_7` is the wrist-roll joint frame, not the grasp center.
+- `arm_link_7` is the wrist-roll joint frame, not the gripper-root operational
+  point.
 - No explicit palm / gripper_base / tool_center link exists.
-- Four direct gripper joints mount distally to each `arm_link_7` (mean
-  offset `0.220210 m`).
-- Candidate grasp center: `^arm7 p = [-0.0365, ±0.21691, 0.0105]`.
-- Candidate orientation axes (directions only): `z` = joint axis, `x` =
-  closing, `y` = finger extension. Sign conventions remain Unknown.
+- The mean of the four direct gripper root joint origins is `0.220210 m`
+  from each `arm_link_7` origin.
+- Candidate gripper-root operational point:
+  `^arm7 p = [-0.0365, ±0.21691, 0.0105]`.
+- Orientation was not finalized in S0.5; its initial inference was corrected
+  and superseded by S0.5b below.
 - No final EE frame was selected; no IK, XR, model, or coordinate-mapping
   changes were made.
 
@@ -239,3 +241,46 @@ gripper-center candidate. Recorded as EXP-004.
 
 Only after a robot-side/downstream authority definition or visual
 confirmation, finalize the EE frame and defer any IK work until then.
+
+### S0.5b — Baseline logical teleoperation EE frames defined
+
+**Action**
+
+Corrected EXP-004 by transforming all four second-stage finger displacement
+vectors through their direct gripper parent rotations into `arm_link_7`.
+Derived and numerically validated logical operational frames `W_L` / `W_R`,
+then added full XYZ MeshCat frames while retaining raw position-only
+gripper-root center markers.
+
+**Result**
+
+- Left secondary vectors point primarily along `+L7 Y`; right secondary
+  vectors point primarily along `-R7 Y` after applying the right-side fixed
+  yaw.
+- Frame semantics are now explicit: `+Y_W` = physical finger extension,
+  `+Z_W` = positive direct hinge axis, `+X_W = y_W cross z_W`.
+- `^L7 R_WL` is identity; `^R7 R_WR` is approximately
+  `diag(-1, -1, +1)` with the small residual from the URDF's rounded
+  `-1.5708 rad` yaw.
+- Both rotations pass orthogonality, determinant `+1`, and right-handed
+  cross-product checks.
+- The ordinary inspection command and the `--visualize` command both ran to
+  completion; MeshCat created the two named operational EE frames without an
+  exception.
+- `W_L` / `W_R` use fixed gripper-root/palm-center operational points. They
+  are not calibrated fingertip TCPs.
+- DEC-004 records these frames as the baseline targets for later arm IK.
+- No IK, XR, URDF/MJCF, coordinate-adapter, or robot-control change was made.
+
+**Files Changed**
+
+- experiments/inspect_wheelloong_m2_ee_frames.py
+- docs/experiments/EXP-004_WHEELLOONG_M2_EE_FRAME.md
+- docs/DECISIONS.md
+- docs/STATUS.md
+- docs/WORKLOG.md
+
+**Next**
+
+Stop at S0.5b. Any IK implementation belongs to a later explicitly scoped
+step and must use the recorded `W_L` / `W_R` frame contract.

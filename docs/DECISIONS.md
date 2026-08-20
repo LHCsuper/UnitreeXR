@@ -57,3 +57,45 @@ This reduces safety risk and avoids building on unverified assumptions.
 ### Consequence
 
 Robot integration remains out of scope for Phase 0 through Phase 4.
+
+## DEC-004 — Target fixed logical operational EE frames for baseline arm IK
+
+Status: Accepted
+
+### Context
+
+`wheelloong_m2` has wrist-roll frames and articulated gripper links, but no
+explicit palm, gripper-base, tool-center, or calibrated fingertip TCP frame.
+EXP-004 derived reproducible robot-side frames from the checked-in geometry.
+
+### Decision
+
+Baseline arm IK will target logical operational EE frames `W_L` and `W_R`.
+Their origins are the means of the four direct gripper root joint origins.
+Their shared axis semantics are:
+
+```text
++Y_W: physical finger-extension direction from wrist/palm toward the fingers
++Z_W: positive direct gripper hinge-axis direction
++X_W: y_W cross z_W
+```
+
+These are fixed palm/gripper-root operational frames, not calibrated
+fingertip TCPs. This is deliberately consistent at the conceptual level with
+Unitree-style IK that constructs fixed operational EE frames from wrist/arm
+joints; it does not assert implementation identity with a specific Unitree
+solver.
+
+### Reason
+
+The fixed frames provide an explicit, symmetric, testable robot-side target
+contract without claiming unavailable fingertip calibration. Their rotations
+are derived from transformed finger-extension vectors and direct hinge axes,
+not from link-name guesses or independently chosen axis signs.
+
+### Consequence
+
+Later offline arm IK work must target `W_L` / `W_R` and preserve the explicit
+fixed transforms recorded in EXP-004 unless a new decision supersedes them.
+This decision does not implement IK, define a final physical TCP, connect XR,
+or authorize robot control.

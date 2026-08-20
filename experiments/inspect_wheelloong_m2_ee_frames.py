@@ -8,7 +8,12 @@ It reads the checked-in URDF, loads the model with Pinocchio, and reports:
 - the torso-relative poses of ``left_arm_link_7`` / ``right_arm_link_7``;
 - the fixed transform from each ``*_arm_link_7`` frame to every directly
   attached gripper joint origin;
-- a geometric center candidate derived only from those joint origins.
+- each second-stage finger vector transformed into ``arm_link_7``;
+- a fixed gripper-root operational point derived from the direct origins;
+- baseline logical teleoperation EE frames ``W_L`` / ``W_R`` and their
+  rotation-matrix validation.
+
+The operational points are not calibrated fingertip TCPs.
 
 Notation: ``^a T_b`` is the homogeneous transform taking coordinates from
 frame ``b`` to frame ``a``; ``^a R_b`` is its rotation part; ``^a p_b`` is the
@@ -35,10 +40,20 @@ ARMS = {
     "left": {
         "link7": "left_arm_link_7",
         "gripper_prefix": "left_gripper",
+        "secondary_joints": ("left_gripper_joint_2", "left_gripper_joint_5"),
+        "operational_frame": "W_L",
+        "arm7_symbol": "L7",
+        "operational_symbol": "WL",
+        "visual_frame": "left_teleop_ee_candidate",
     },
     "right": {
         "link7": "right_arm_link_7",
         "gripper_prefix": "right_gripper",
+        "secondary_joints": ("right_gripper_joint_2", "right_gripper_joint_5"),
+        "operational_frame": "W_R",
+        "arm7_symbol": "R7",
+        "operational_symbol": "WR",
+        "visual_frame": "right_teleop_ee_candidate",
     },
 }
 
@@ -217,6 +232,63 @@ def direct_gripper_joints(
     return ordered
 
 
+def normalize(vector: np.ndarray, label: str) -> np.ndarray:
+    norm = float(np.linalg.norm(vector))
+    if norm < 1e-12:
+        raise ValueError(f"Cannot normalize near-zero vector for {label}: {vector}")
+    return np.asarray(vector, dtype=float) / norm
+
+
+def secondary_vectors_in_arm7(
+    joints: dict[str, JointSource],
+    link7: str,
+    secondary_names: tuple[str, ...],
+) -> list[tuple[JointSource, JointSource, np.ndarray]]:
+    """Express secondary-joint displacement vectors in ``arm_link_7``.
+
+    At the zero gripper configuration, the fixed direct-joint origin rotation
+    is ``^arm7 R_parent_gripper``. Each secondary origin translation is stored
+    in that parent gripper-link frame, so vectors must be transformed as
+    ``^arm7 v_secondary = ^arm7 R_parent_gripper * ^parent v_secondary``.
+    """
+    transformed: list[tuple[JointSource, JointSource, np.ndarray]] = []
+    for secondary_name in secondary_names:
+        secondary = joints[secondary_name]
+        parent_candidates = [
+            joint
+            for joint in joints.values()
+            if joint.child == secondary.parent and joint.parent == link7
+        ]
+        if len(parent_candidates) != 1:
+            raise ValueError(
+                f"Expected one direct parent joint for {secondary_name}, "
+                f"found {len(parent_candidates)}"
+            )
+        direct_parent = parent_candidates[0]
+        arm7_R_parent = origin_to_transform(direct_parent)[:3, :3]
+        arm7_v_secondary = arm7_R_parent @ secondary.origin_xyz
+        transformed.append((secondary, direct_parent, arm7_v_secondary))
+    return transformed
+
+
+def dominant_axis(vector: np.ndarray) -> tuple[str, float]:
+    axis_names = ("X", "Y", "Z")
+    index = int(np.argmax(np.abs(vector)))
+    sign = "+" if vector[index] >= 0.0 else "-"
+    return f"{sign}arm7 {axis_names[index]}", float(abs(vector[index]))
+
+
+def rotation_checks(rotation: np.ndarray) -> tuple[float, float, float]:
+    orthogonality_error = float(
+        np.linalg.norm(rotation.T @ rotation - np.eye(3), ord="fro")
+    )
+    determinant = float(np.linalg.det(rotation))
+    cross_product_error = float(
+        np.linalg.norm(np.cross(rotation[:, 0], rotation[:, 1]) - rotation[:, 2])
+    )
+    return orthogonality_error, determinant, cross_product_error
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -311,7 +383,7 @@ def main() -> None:
     # ------------------------------------------------------------------
     # Geometric center candidates
     # ------------------------------------------------------------------
-    print("=== Geometric gripper-center candidates (NOT confirmed TCP) ===")
+    print("=== Gripper-root center candidates (fixed operational points, NOT TCPs) ===")
     for side, names in ARMS.items():
         link7 = names["link7"]
         origins = direct_origins[side]
@@ -321,8 +393,11 @@ def main() -> None:
         print(f"  {side.upper()} gripper")
         for index, origin in enumerate(origins, start=1):
             print(f"    ^arm7 p_direct_joint_{index} = {format_vector(origin)}")
-        print(f"    ^arm7 p_candidate (mean of direct joint origins) = {format_vector(center)}")
-        print(f"    ||^arm7 p_candidate|| = {np.linalg.norm(center):.6f} m")
+        print(
+            "    ^arm7 p_gripper_root_center "
+            f"(mean of direct joint origins) = {format_vector(center)}"
+        )
+        print(f"    ||^arm7 p_gripper_root_center|| = {np.linalg.norm(center):.6f} m")
 
         # Pairwise midpoints to expose the symmetry structure.
         if len(origins) == 4:
@@ -343,48 +418,117 @@ def main() -> None:
                 f"{format_vector(mid_jaws[1])}"
             )
 
-        print(f"    candidate center world transform = ^world T_{side}_candidate_pos")
-        world_T_candidate = results[side]["world_T_link7"].copy()
-        world_T_candidate[:3, 3] = (
+        world_p_candidate = (
             results[side]["world_T_link7"][:3, :3] @ center
             + results[side]["world_T_link7"][:3, 3]
         )
-        print(f"      {format_transform(world_T_candidate)}")
+        print(
+            f"    ^world p_{side}_gripper_root_center = "
+            f"{format_vector(world_p_candidate)}"
+        )
         print()
         results[side]["candidate_center_arm7"] = center
-        results[side]["candidate_center_world"] = world_T_candidate[:3, 3]
+        results[side]["candidate_center_world"] = world_p_candidate
         results[side]["direct_origins"] = origins
 
     # ------------------------------------------------------------------
-    # Orientation analysis (axes of candidate frame)
+    # Secondary finger vectors transformed into arm_link_7
     # ------------------------------------------------------------------
-    print("=== Candidate EE orientation: geometric inference ===")
-    for side in ("left", "right"):
-        origins = direct_origins[side]
-        # All direct gripper joints share axis +z in their child frame.
-        joint_axes = [
-            joints[j.name].axis
-            for j in direct_gripper_joints(joints, ARMS[side]["link7"])
-        ]
+    print("=== Secondary finger displacement vectors expressed in arm_link_7 ===")
+    for side, names in ARMS.items():
+        link7 = names["link7"]
+        transformed = secondary_vectors_in_arm7(
+            joints,
+            link7,
+            names["secondary_joints"],
+        )
         print(f"  {side.upper()} gripper:")
-        print(f"    direct joint axes: {[format_vector(a) for a in joint_axes]}")
-        # Finger extension direction: child links extend in +y (link_2/5 offset +y).
-        # Jaw closing direction: mounting points spread along x.
-        span_x = float(np.ptp([origin[0] for origin in origins]))
-        span_y = float(np.ptp([origin[1] for origin in origins]))
-        span_z = float(np.ptp([origin[2] for origin in origins]))
-        print(
-            f"    mounting-point spread [x, y, z]: "
-            f"[{span_x:.6f}, {span_y:.6f}, {span_z:.6f}] m"
+        for secondary, direct_parent, arm7_v_secondary in transformed:
+            print(
+                f"    {secondary.name} through {direct_parent.name}:\n"
+                f"      ^{secondary.parent} v_secondary = "
+                f"{format_vector(secondary.origin_xyz)}\n"
+                f"      ^arm7 v_secondary = "
+                f"{format_vector(arm7_v_secondary)}\n"
+                f"      ^arm7 unit(v_secondary) = "
+                f"{format_vector(normalize(arm7_v_secondary, secondary.name))}"
+            )
+        results[side]["secondary_vectors_arm7"] = [
+            vector for _, _, vector in transformed
+        ]
+        print()
+
+    # ------------------------------------------------------------------
+    # Baseline logical teleoperation operational EE frames W_L / W_R
+    # ------------------------------------------------------------------
+    print("=== Baseline logical teleoperation operational EE frames ===")
+    for side, names in ARMS.items():
+        link7 = names["link7"]
+        frame_name = names["operational_frame"]
+        arm7_symbol = names["arm7_symbol"]
+        operational_symbol = names["operational_symbol"]
+        direct_joints = direct_gripper_joints(joints, link7)
+
+        hinge_axes_arm7 = [
+            origin_to_transform(joint)[:3, :3] @ joint.axis
+            for joint in direct_joints
+        ]
+        z_W_arm7 = normalize(
+            np.mean(hinge_axes_arm7, axis=0),
+            f"{frame_name} hinge-axis mean",
         )
-        print(
-            "    geometric inference: closing ~ x, extension ~ +y, "
-            "normal ~ z (joint axis)."
+
+        mean_secondary = np.mean(results[side]["secondary_vectors_arm7"], axis=0)
+        planar_extension = mean_secondary - np.dot(mean_secondary, z_W_arm7) * z_W_arm7
+        y_W_arm7 = normalize(planar_extension, f"{frame_name} extension direction")
+        x_W_arm7 = normalize(
+            np.cross(y_W_arm7, z_W_arm7),
+            f"{frame_name} right-handed x axis",
         )
-    print(
-        "    Note: axis signs for closing (x) and the exact EE frame are NOT "
-        "mechanically fixed; orientation remains a candidate, not a Confirmed Fact."
-    )
+        arm7_R_W = np.column_stack((x_W_arm7, y_W_arm7, z_W_arm7))
+
+        orthogonality_error, determinant, cross_product_error = rotation_checks(
+            arm7_R_W
+        )
+        tolerance = 1e-10
+        if (
+            orthogonality_error > tolerance
+            or abs(determinant - 1.0) > tolerance
+            or cross_product_error > tolerance
+        ):
+            raise RuntimeError(
+                f"{frame_name} rotation validation failed: "
+                f"orthogonality_error={orthogonality_error}, "
+                f"det={determinant}, cross_error={cross_product_error}"
+            )
+
+        arm7_T_W = np.eye(4)
+        arm7_T_W[:3, :3] = arm7_R_W
+        arm7_T_W[:3, 3] = results[side]["candidate_center_arm7"]
+        world_T_W = results[side]["world_T_link7"] @ arm7_T_W
+        extension_axis, extension_alignment = dominant_axis(y_W_arm7)
+
+        print(f"  {side.upper()}: {frame_name}")
+        print(
+            "    derived physical extension direction = "
+            f"{extension_axis} (alignment={extension_alignment:.9f})"
+        )
+        print(f"    +X_W expressed in arm7 = {format_vector(x_W_arm7)}")
+        print(f"    +Y_W expressed in arm7 = {format_vector(y_W_arm7)}")
+        print(f"    +Z_W expressed in arm7 = {format_vector(z_W_arm7)}")
+        print(f"    ^{arm7_symbol} R_{operational_symbol} =")
+        print(f"      {format_transform(arm7_R_W)}")
+        print(f"    ^{arm7_symbol} T_{operational_symbol} =")
+        print(f"      {format_transform(arm7_T_W)}")
+        print(f"    det(R) = {determinant:.12f}")
+        print(f"    ||R^T R - I||_F = {orthogonality_error:.12e}")
+        print(f"    ||x_W cross y_W - z_W|| = {cross_product_error:.12e}")
+        print()
+
+        results[side]["arm7_R_operational"] = arm7_R_W
+        results[side]["arm7_T_operational"] = arm7_T_W
+        results[side]["world_T_operational"] = world_T_W
+        results[side]["visual_frame"] = names["visual_frame"]
     print()
 
     if args.visualize:
@@ -476,14 +620,25 @@ def visualize(
             )
 
         set_point(
-            f"candidate_center/{side}",
+            f"gripper_root_center_candidate/{side}",
             results[side]["candidate_center_world"],
             magenta,
             0.010,
         )
 
-    print("Visualization ready. Candidate center is drawn as a position-only marker.")
-    print("Orientation of the candidate frame is intentionally NOT drawn: it is Unknown.")
+        operational_frame = results[side]["visual_frame"]
+        make_frame(operational_frame, 0.10)
+        set_frame(
+            operational_frame,
+            results[side]["world_T_operational"],
+            0.10,
+        )
+
+    print("Visualization ready.")
+    print(
+        "Raw gripper-root centers are magenta position-only markers; "
+        "left_teleop_ee_candidate and right_teleop_ee_candidate are full XYZ frames."
+    )
 
 
 if __name__ == "__main__":
