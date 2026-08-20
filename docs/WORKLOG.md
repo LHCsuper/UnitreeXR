@@ -362,3 +362,43 @@ The symbolic full configuration starts at neutral and scatters the existing
 
 Stop at S1.1. Any symbolic Jacobian, IK formulation, or optimization work
 requires a separately scoped task.
+
+### S1.2.0 — `wheelloong_m2` solver-free SE(3) IK math foundation established
+
+**Action**
+
+Added numeric and CasADi symbolic SE(3) pose-error utilities plus a numeric
+dual-arm cost decomposition. Added EXP-007 and a deterministic experiment
+covering error sign, SO(3) direction, log/exp reconstruction, symbolic
+agreement, and cost accounting.
+
+**Result**
+
+- The fixed S1.0/S1.1 `q_arm(14)` and S0.5b `W_L` / `W_R` contracts are
+  consumed unchanged.
+- Per-arm error in torso axes is explicitly `p_current - p_target` and
+  `Log(R_current * R_target^T)`; `Rz(+30 deg)` versus identity produced the
+  expected `+Z` `0.523598775598 rad` rotation vector.
+- CasADi’s symbolic SO(3) log includes a small-angle branch and matched the
+  numeric 30-degree result exactly in the recorded evaluation.
+- `IKWeights` exposes pose, rotation, nominal, and smoothness weights; the
+  cost function only evaluates and returns its scalar terms.
+- DEC-007 records the convention. No iteration, CasADi Opti, NLP, IPOPT,
+  solver, XR, controller, URDF/MJCF edit, or robot control was added.
+
+**Files Changed**
+
+- src/wheelloong_m2/ik/__init__.py
+- src/wheelloong_m2/ik/se3_error.py
+- src/wheelloong_m2/ik/casadi_se3_error.py
+- src/wheelloong_m2/ik/cost.py
+- experiments/test_wheelloong_m2_ik_math.py
+- docs/experiments/EXP-007_WHEELLOONG_M2_SE3_IK_MATH.md
+- docs/DECISIONS.md
+- docs/STATUS.md
+- docs/WORKLOG.md
+
+**Next**
+
+Stop at S1.2.0. A future explicitly scoped stage may formulate a solver, but
+this stage does not construct, configure, or invoke one.

@@ -96,6 +96,22 @@ Trial 3: 1.0421 deg
 - No IK, cost, NLP, IPOPT, Opti, solver, XR path, controller, model edit, or
   robot control has been introduced.
 
+## Established — `wheelloong_m2` SE(3) IK Math Foundation
+
+- EXP-007 defines solver-free per-arm torso-frame errors as
+  `p_current - p_target` and `Log(R_current * R_target^T)` for the unchanged
+  logical operational frames `W_L` / `W_R`.
+- Numeric errors use Pinocchio `log3`; CasADi has an independent symbolic
+  SO(3)-log expression with a small-angle branch.
+- The numeric dual-arm objective is decomposed into pose,
+  nominal-configuration regularization, and previous-configuration smoothness
+  terms with caller-provided `IKWeights`.
+- Deterministic checks cover zero, translation, a positive-Z 30-degree
+  rotation error, random `exp(log(R))` reconstruction, numeric-symbolic
+  agreement, and cost decomposition.
+- No IK iteration, NLP, CasADi Opti, IPOPT, solver, XR path, controller,
+  URDF/MJCF edit, or robot control has been introduced.
+
 ## Hypothesis
 
 PICO Runtime may use gravity-related inertial information as an important

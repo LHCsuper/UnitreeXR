@@ -157,3 +157,40 @@ without duplicating, modifying, or introducing a second model file.
 
 S1.1 remains FK-only. It creates no symbolic IK, cost, NLP, IPOPT, Opti, or
 solver component, and does not modify the current numeric FK interface.
+
+## DEC-007 — Use torso-frame current-minus-target SE(3) errors before solver work
+
+Status: Accepted
+
+### Context
+
+S1.0 and S1.1 expose only the unchanged logical operational frames `W_L` and
+`W_R` as torso-relative poses. A later offline IK stage needs one explicit,
+Euler-angle-free error convention before any optimizer is considered.
+
+### Decision
+
+For each arm, define pose error in torso axes as:
+
+```text
+e_p = p_current - p_target
+e_R = Log(R_current * R_target^T)
+```
+
+Use Pinocchio `log3` for numeric evaluation and a matching CasADi
+small-angle-safe SO(3)-log expression for symbolic evaluation. The
+solver-free dual-arm cost is the explicit sum of weighted translation and
+rotation error squares, nominal-configuration regularization, and
+previous-configuration smoothness terms.
+
+### Reason
+
+This fixes the sign, orientation direction, coordinate frame, and cost-term
+meaning in a testable math layer while preserving the existing S0.5b `W_L` /
+`W_R` operational EE contract.
+
+### Consequence
+
+This decision adds no IK iteration, NLP, Opti, IPOPT, solver, controller, XR
+path, model edit, or robot-control authority. Any later solver design must
+consume this convention unless a new decision explicitly supersedes it.
