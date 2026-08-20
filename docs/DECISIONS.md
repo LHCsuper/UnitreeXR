@@ -99,3 +99,33 @@ Later offline arm IK work must target `W_L` / `W_R` and preserve the explicit
 fixed transforms recorded in EXP-004 unless a new decision supersedes them.
 This decision does not implement IK, define a final physical TCP, connect XR,
 or authorize robot control.
+
+## DEC-005 — Expose a named 14-DOF arm interface before any IK work
+
+Status: Accepted
+
+### Context
+
+The loaded Pinocchio model has `nq=42` and `nv=32`, including non-arm and
+non-scalar gripper joints. Exposing those backend indices to later consumers
+would make the arm target contract ambiguous and brittle.
+
+### Decision
+
+Use one public `q_arm` ordering of the seven named left-arm joints followed by
+the seven named right-arm joints. Resolve every name to its Pinocchio
+configuration and velocity index at model load time. The kinematics backbone
+returns `^torso T_WL` / `^torso T_WR` and torso-expressed `6x14` Jacobians for
+the unchanged S0.5b logical operational frames.
+
+### Reason
+
+This makes the robot-side motion interface explicit and testable without
+leaking Pinocchio's full configuration layout or silently changing frame
+conventions.
+
+### Consequence
+
+No later FK/Jacobian/IK consumer may use handwritten Pinocchio joint indices
+for these arms. The module is kinematics-only: this decision adds no IK,
+optimizer, XR path, controller, model change, or robot-control authority.

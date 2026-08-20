@@ -68,6 +68,21 @@ Trial 3: 1.0421 deg
 - No arm IK implementation, XR connection, model edit, or robot control has
   been introduced.
 
+## Established — `wheelloong_m2` Pinocchio Kinematics Backbone
+
+- EXP-005 provides a 14-DOF named `q_arm` interface: seven left-arm joints
+  followed by seven right-arm joints.
+- The module resolves public arm indices to Pinocchio configuration and
+  velocity indices by joint name rather than exposing the backend layout.
+- FK returns the fixed S0.5b operational frames as `^torso T_WL` and
+  `^torso T_WR`.
+- Jacobians have shape `(6, 14)`, use rows `[linear; angular]`, and are
+  explicitly expressed in torso axes at the operational EE origins.
+- Fixed-seed legal-limit sampling and a finite-difference check run without
+  exception; residuals are at double-precision scale for the checked joint.
+- No IK, optimizer, XR path, MuJoCo controller, model edit, or robot control
+  has been introduced.
+
 ## Hypothesis
 
 PICO Runtime may use gravity-related inertial information as an important

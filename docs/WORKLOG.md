@@ -284,3 +284,45 @@ gripper-root center markers.
 
 Stop at S0.5b. Any IK implementation belongs to a later explicitly scoped
 step and must use the recorded `W_L` / `W_R` frame contract.
+
+### S1.0 — `wheelloong_m2` Pinocchio FK/Jacobian backbone established
+
+**Action**
+
+Added a module-relative URDF loader, a single named 14-DOF arm interface,
+and pure Pinocchio torso-relative FK/Jacobian interfaces for the existing
+S0.5b logical operational frames `W_L` / `W_R`. Added EXP-005 with zero,
+fixed-seed legal-random, and finite-difference checks.
+
+**Result**
+
+- `q_arm` has a fixed left-then-right ordering and name-resolved Pinocchio
+  configuration/velocity addresses.
+- FK returns `^torso T_WL` / `^torso T_WR`, never world-frame poses.
+- Both operational Jacobians have shape `(6, 14)` with `[linear; angular]`
+  rows explicitly expressed in torso axes.
+- The finite-difference check for `left_arm_joint_4` ran at the random legal
+  configuration; left residuals were `1.812425267363e-15 m` and
+  `1.729217900636e-16 rad`.
+- DEC-005 records the public arm-order and torso-frame kinematics contract.
+- No IK, CasADi, IPOPT, XR, MuJoCo controller, URDF/MJCF edit, or robot
+  control was added.
+
+**Files Changed**
+
+- src/wheelloong_m2/__init__.py
+- src/wheelloong_m2/kinematics/__init__.py
+- src/wheelloong_m2/kinematics/robot_model.py
+- src/wheelloong_m2/kinematics/frames.py
+- src/wheelloong_m2/kinematics/dual_arm_fk.py
+- experiments/test_wheelloong_m2_kinematics.py
+- docs/experiments/EXP-005_WHEELLOONG_M2_PINOCCHIO_KINEMATICS.md
+- docs/DECISIONS.md
+- docs/STATUS.md
+- docs/WORKLOG.md
+
+**Next**
+
+Stop at S1.0. Any IK design or implementation requires a separately scoped
+task and must consume this named `q_arm` plus the unchanged `W_L` / `W_R`
+contract.
