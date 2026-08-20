@@ -175,8 +175,24 @@ Trial 3: 1.0421 deg
 - A 2-second fake-source integration run delivered 240 XR sample pairs through
   the adapter and S2.1 buffer, followed by 500 IK solves and 2000 physics
   steps; final tracking matched the existing fake-signal baseline.
-- No PICO SDK, XRoboToolkit, OpenXR, coordinate calibration, hand retargeting,
-  filtering, real device, model edit, or robot-control path is added.
+- S3.0 itself added no PICO SDK, XRoboToolkit, OpenXR, coordinate calibration,
+  hand retargeting, filtering, real device, model edit, or robot-control path;
+  the later S3.1 raw source wrapper is recorded separately below.
+
+## Established — `wheelloong_m2` XRoboToolkit Source Wrapper
+
+- EXP-012 adds `XRoboToolkitSource.connect/sample/disconnect` and converts
+  raw SDK controller arrays `[x, y, z, qx, qy, qz, qw]` into the existing
+  `XRControllerPose` with a seconds timestamp and a rotation matrix.
+- SDK position values are copied without a robot-frame transform, scale,
+  offset, axis conversion, or calibration. Raw `xyzw` quaternions are retained
+  for source logging.
+- The installed `xrobotoolkit_sdk` distribution is `1.0.2`. In the recorded
+  10-second live attempt, SDK initialization connected to local PC Service but
+  `get_time_stamp_ns()` remained zero, so current pose acquisition, sample
+  rate, and interactive Pose A/B validation remain unavailable.
+- No XRAdapter, coordinate transform, hand retargeting, IK, MuJoCo module,
+  model file, or real robot path is modified.
 
 ## Hypothesis
 

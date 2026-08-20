@@ -320,3 +320,33 @@ S3.0 does not establish a PICO, XRoboToolkit, OpenXR, or real-device mapping;
 it contains no calibration, axis mapping, scale, offset, hand retargeting, or
 filtering. Any replacement of the fake identity convention requires a new,
 separately validated decision and experiment.
+
+## DEC-012 — Keep XRoboToolkit source acquisition raw and adapter-independent
+
+Status: Accepted
+
+### Context
+
+The established `XRControllerPose` interface needs a real SDK source, but the
+XR tracking frame has no validated transform to robot frames. Combining SDK
+acquisition with robot-target conversion would hide that unresolved boundary.
+
+### Decision
+
+Add `XRoboToolkitSource` with explicit `connect`, `sample`, and `disconnect`
+methods. Parse raw SDK arrays as `[x, y, z, qx, qy, qz, qw]`, copy position,
+convert only the `xyzw` quaternion representation to a rotation matrix, and
+convert the SDK nanosecond timestamp to `XRControllerPose` seconds. Retain
+raw quaternions for logging. Do not import or call `XRAdapter`, IK, or MuJoCo.
+
+### Reason
+
+This makes SDK I/O observable while retaining one explicit, testable location
+for a later separately validated coordinate conversion.
+
+### Consequence
+
+S3.1 does not define a robot-frame transform, controller offset, scale,
+calibration, hand retargeting, or physical-control path. A zero/unchanging
+SDK timestamp is reported as unavailable tracking data rather than converted
+into a synthetic pose.

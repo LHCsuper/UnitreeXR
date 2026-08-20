@@ -565,3 +565,41 @@ loop without changing robot-side runtime modules.
 
 Stop at S3.0. The adapter path is fake-source only; do not connect PICO or
 replace the identity test convention without separately scoped work.
+
+### S3.1 — `wheelloong_m2` XRoboToolkit/PICO source layer established
+
+**Action**
+
+Added a lazy-import XRoboToolkit source wrapper with explicit SDK lifecycle,
+raw controller-pose parsing, `xyzw` quaternion-to-matrix conversion, SDK
+timestamp conversion, and raw quaternion logging support. Added a 10-second
+pose logger with optional interactive Pose A/B capture.
+
+**Result**
+
+- The installed `xrobotoolkit_sdk` distribution reports version `1.0.2`.
+- The wrapper's device-independent identity-quaternion conversion check
+  passed: test position was copied, timestamp was converted from ns to s, and
+  `[0, 0, 0, 1]` produced an identity rotation.
+- Live SDK initialization connected to the local PC Service, but the SDK
+  timestamp remained zero during a full 10-second wait. Therefore no current
+  PICO pose, sample count, actual rate, or physical Pose A/B delta is claimed.
+- DEC-012 records that the wrapper remains raw and adapter-independent. No
+  coordinate mapping, calibration, controller offset, retargeting, IK,
+  MuJoCo change, or robot control was added.
+
+**Files Changed**
+
+- src/wheelloong_m2/xr/robotoolkit_source.py
+- src/wheelloong_m2/xr/__init__.py
+- experiments/test_robotoolkit_pose.py
+- docs/experiments/EXP-012_XROBOToolKIT_SOURCE.md
+- docs/DECISIONS.md
+- docs/STATUS.md
+- docs/WORKLOG.md
+
+**Next**
+
+The source can be rerun after the PICO XRoboToolkit app produces a nonzero
+timestamp. Do not use its raw output for robot targets until a separately
+scoped coordinate-mapping stage.
