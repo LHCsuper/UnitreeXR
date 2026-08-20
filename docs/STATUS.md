@@ -124,9 +124,26 @@ Trial 3: 1.0421 deg
   smoothness cost.
 - Zero, fixed-seed reachable random, and simultaneous dual-arm target cases
   reported IPOPT success and limit-respecting solutions in offline tests.
-- No XR/PICO, coordinate adapter, trajectory, velocity/acceleration limit,
-  collision avoidance, torque, MuJoCo controller, model edit, or robot
-  control has been introduced.
+- S2.0 consumes the offline solver in a MuJoCo-only position-actuator loop;
+  no XR/PICO, coordinate adapter, model edit, or robot control is introduced.
+
+## Established — `wheelloong_m2` MuJoCo IK Simulation Loop
+
+- EXP-009 loads the existing controlled MJCF and maps each named `q_arm`
+  joint to its loaded qpos address and its single loaded position-actuator
+  ctrl address; no numeric-index assumption is used.
+- IK output is written only to `data.ctrl`, and the model advances by
+  `mj_step`; the loop never writes arm `data.qpos` targets directly.
+- Neutral and unilateral left/right target experiments loaded successfully,
+  reported IPOPT success, tracked their arm targets within approximately
+  `1.3e-3` to `1.7e-3 rad`, and produced the expected unilateral simulated
+  arm motion.
+- Final simulated named qpos values are evaluated by the existing Pinocchio
+  FK for torso-relative `W_L` / `W_R` validation.
+- This remains simulation-only: there is no XR/PICO, coordinate adapter,
+  real robot, low-level motor controller, trajectory generator,
+  velocity/acceleration limit, collision avoidance, torque policy, URDF/MJCF
+  edit, or robot-control path.
 
 ## Hypothesis
 

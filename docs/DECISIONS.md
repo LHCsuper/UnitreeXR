@@ -226,3 +226,35 @@ residual when regularization and smoothness select a lower-cost configuration.
 It remains offline only and adds no trajectory, velocity/acceleration limit,
 collision avoidance, torque, XR path, controller, model edit, or robot-control
 authority.
+
+## DEC-009 — Drive the checked-in MuJoCo model only through named position actuators
+
+Status: Accepted
+
+### Context
+
+S1.2.1 produces a named 14-DOF offline `q_arm` configuration, while the
+controlled MJCF has a different full qpos layout and existing position
+actuators. Direct qpos assignment would bypass actuator dynamics and conceal
+an invalid index mapping.
+
+### Decision
+
+For every `ARM_JOINT_NAMES` entry, resolve the loaded MJCF joint by name,
+read its qpos address, scan for its single joint-transmission position
+actuator, and write the corresponding `q_arm` target only to that actuator's
+`data.ctrl` entry. Advance state with `mj_step` and read named qpos values for
+offline Pinocchio FK validation.
+
+### Reason
+
+This preserves the named IK contract across backends and validates the
+existing model's actuator path without changing the MJCF or bypassing
+simulation dynamics.
+
+### Consequence
+
+S2.0 is an offline MuJoCo position-control loop. It provides no real robot,
+XR/PICO, coordinate adapter, motor controller, trajectory, velocity or
+acceleration limit, collision avoidance, torque policy, or robot-control
+authority.

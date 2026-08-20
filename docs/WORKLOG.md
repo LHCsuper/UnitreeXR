@@ -441,3 +441,44 @@ Added EXP-008 and deterministic numeric-FK round-trip tests.
 
 Stop at S1.2.1. This remains an offline pose solver; do not connect it to VR,
 MuJoCo control, or a physical robot without separately scoped work.
+
+### S2.0 — `wheelloong_m2` offline MuJoCo IK loop established
+
+**Action**
+
+Added a module-relative loader for the existing controlled MJCF, named
+joint-to-qpos-to-position-actuator mapping, and a position-control stepping
+loop. Added an IK-to-MuJoCo experiment that solves offline targets, writes
+only `data.ctrl`, advances physics, reads final named qpos, and evaluates
+Pinocchio FK.
+
+**Result**
+
+- MuJoCo `3.10.0` loaded `wheelloong_m2_controlled.xml` with `nq=32`,
+  `nv=32`, `nu=17`, and `0.001 s` timestep.
+- Loaded name mapping resolved left arm qpos/control addresses `6..12` /
+  `2..8` and right addresses `19..25` / `9..15`.
+- Neutral, left-only, and right-only targets all had IPOPT success. The
+  measured simulated joint tracking norms were `1.284e-3`, `1.629e-3`, and
+  `1.688e-3 rad` respectively.
+- The unilateral cases showed approximately `9.8e-2 rad` simulated motion in
+  the requested arm versus approximately `9.1e-4 rad` in the held-neutral arm.
+- DEC-009 records that targets enter only through existing position-actuator
+  controls. No XR, real robot, low-level motor controller, trajectory,
+  velocity/acceleration limit, collision, torque, or model edit was added.
+
+**Files Changed**
+
+- src/wheelloong_m2/simulation/__init__.py
+- src/wheelloong_m2/simulation/mujoco_model.py
+- src/wheelloong_m2/simulation/mujoco_arm_controller.py
+- experiments/test_wheelloong_m2_mujoco_ik_loop.py
+- docs/experiments/EXP-009_WHEELLOONG_M2_MJOC0_IK_LOOP.md
+- docs/DECISIONS.md
+- docs/STATUS.md
+- docs/WORKLOG.md
+
+**Next**
+
+Stop at S2.0. The loop is offline MuJoCo simulation only; do not attach XR or
+real robot control without separately scoped work.
