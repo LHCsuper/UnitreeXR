@@ -129,3 +129,31 @@ conventions.
 No later FK/Jacobian/IK consumer may use handwritten Pinocchio joint indices
 for these arms. The module is kinematics-only: this decision adds no IK,
 optimizer, XR path, controller, model change, or robot-control authority.
+
+## DEC-006 — Keep symbolic FK independent from numeric FK
+
+Status: Accepted
+
+### Context
+
+S1.0 provides numeric Pinocchio FK, while later offline work may require
+symbolic expressions. Reusing numeric pose results as symbolic outputs would
+not verify symbolic model construction or the full configuration mapping.
+
+### Decision
+
+Build a separate `WheelloongM2CasadiKinematics` implementation using
+`pinocchio.casadi.Model` converted from the numeric model loaded from the
+same checked-in URDF. It uses the existing named 14-DOF mapping and unchanged
+S0.5b `W_L` / `W_R` fixed transforms, then returns only torso-relative
+symbolic FK expressions and a CasADi evaluation function.
+
+### Reason
+
+Independent numeric and symbolic FK paths make their agreement observable
+without duplicating, modifying, or introducing a second model file.
+
+### Consequence
+
+S1.1 remains FK-only. It creates no symbolic IK, cost, NLP, IPOPT, Opti, or
+solver component, and does not modify the current numeric FK interface.

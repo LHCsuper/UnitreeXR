@@ -326,3 +326,39 @@ fixed-seed legal-random, and finite-difference checks.
 Stop at S1.0. Any IK design or implementation requires a separately scoped
 task and must consume this named `q_arm` plus the unchanged `W_L` / `W_R`
 contract.
+
+### S1.1 — `wheelloong_m2` CasADi symbolic FK backbone established
+
+**Action**
+
+Verified the installed CasADi/Pinocchio symbolic environment, then added an
+independent CasADi FK path derived from the same URDF-loaded Pinocchio model.
+The symbolic full configuration starts at neutral and scatters the existing
+14 named arm symbols. EXP-006 compares its outputs to S1.0 numeric FK.
+
+**Result**
+
+- CasADi `3.6.7`, Pinocchio `3.4.0`, and `pinocchio.casadi` are available.
+- The public symbolic input is `SX q_arm(14)` in the unchanged S1.0 order;
+  full symbolic Pinocchio configuration is `SX(42)`.
+- Symbolic FK returns the existing `^torso T_WL` / `^torso T_WR` components
+  via a `dual_arm_fk` CasADi function.
+- Zero and fixed-seed legal-random cases had zero printed position error;
+  maximum printed rotation residual was `5.334383746338e-16 rad`.
+- DEC-006 records the independent numeric/symbolic FK architecture.
+- No IK, cost, IPOPT, Opti, solver, XR, controller, URDF/MJCF edit, or robot
+  control was added.
+
+**Files Changed**
+
+- src/wheelloong_m2/kinematics/casadi_fk.py
+- experiments/test_wheelloong_m2_casadi_fk.py
+- docs/experiments/EXP-006_WHEELLOONG_M2_CASADI_FK.md
+- docs/DECISIONS.md
+- docs/STATUS.md
+- docs/WORKLOG.md
+
+**Next**
+
+Stop at S1.1. Any symbolic Jacobian, IK formulation, or optimization work
+requires a separately scoped task.

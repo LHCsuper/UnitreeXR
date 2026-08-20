@@ -83,6 +83,19 @@ Trial 3: 1.0421 deg
 - No IK, optimizer, XR path, MuJoCo controller, model edit, or robot control
   has been introduced.
 
+## Established — `wheelloong_m2` CasADi Symbolic FK Backbone
+
+- EXP-006 builds an independent CasADi/`pinocchio.casadi` symbolic FK path
+  for the unchanged 14-DOF `q_arm` and S0.5b `W_L` / `W_R` contract.
+- Symbolic full configuration has `nq=42`, starts at Pinocchio neutral, and
+  scatters only the 14 named arm symbols into their resolved q indices.
+- The CasADi function returns `^torso T_WL` / `^torso T_WR` components, not
+  world-frame poses.
+- Zero and fixed-seed legal-random cases agree with numeric Pinocchio FK at
+  zero position error and floating-point-scale rotation error.
+- No IK, cost, NLP, IPOPT, Opti, solver, XR path, controller, model edit, or
+  robot control has been introduced.
+
 ## Hypothesis
 
 PICO Runtime may use gravity-related inertial information as an important
