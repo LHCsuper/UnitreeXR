@@ -194,3 +194,35 @@ meaning in a testable math layer while preserving the existing S0.5b `W_L` /
 This decision adds no IK iteration, NLP, Opti, IPOPT, solver, controller, XR
 path, model edit, or robot-control authority. Any later solver design must
 consume this convention unless a new decision explicitly supersedes it.
+
+## DEC-008 — Use a reusable offline Opti/IPOPT baseline with soft dual-arm pose cost
+
+Status: Accepted
+
+### Context
+
+S1.2.0 established named 14-DOF pose-error and cost mathematics but did not
+select configurations. The first offline IK implementation must preserve the
+existing `W_L` / `W_R` target contract and named URDF joint limits.
+
+### Decision
+
+Create one parameterized CasADi `Opti` problem with the existing
+`q_arm(14)` order as its decision variable. Reuse S1.1 symbolic FK and S1.2.0
+symbolic SE(3) error to minimize weighted dual-arm pose, neutral
+regularization, and `q_prev` smoothness costs. Constrain only named arm
+position limits read from the URDF, configure IPOPT with quiet default
+printing, and accept an optional `q_init` warm-start seed on every solve.
+
+### Reason
+
+This creates a testable offline solver with explicit target and constraint
+semantics while avoiding unscoped dynamic, collision, control, or XR work.
+
+### Consequence
+
+The baseline is a soft-cost IK solver: a solution can retain nonzero pose
+residual when regularization and smoothness select a lower-cost configuration.
+It remains offline only and adds no trajectory, velocity/acceleration limit,
+collision avoidance, torque, XR path, controller, model edit, or robot-control
+authority.

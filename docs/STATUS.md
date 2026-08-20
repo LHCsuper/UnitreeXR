@@ -109,8 +109,24 @@ Trial 3: 1.0421 deg
 - Deterministic checks cover zero, translation, a positive-Z 30-degree
   rotation error, random `exp(log(R))` reconstruction, numeric-symbolic
   agreement, and cost decomposition.
-- No IK iteration, NLP, CasADi Opti, IPOPT, solver, XR path, controller,
-  URDF/MJCF edit, or robot control has been introduced.
+- S1.2.1 consumes this math in an offline CasADi Opti/IPOPT baseline; no XR,
+  controller, URDF/MJCF edit, or robot control is introduced.
+
+## Established — `wheelloong_m2` Offline Dual-Arm NLP IK Baseline
+
+- EXP-008 adds a reusable CasADi Opti/IPOPT solve over named `q_arm(14)` for
+  the unchanged torso-relative operational targets `^torso T_WL` / `^torso T_WR`.
+- It reuses the independent symbolic FK and S1.2.0 CasADi SE(3) error. Targets
+  are Opti parameters set per call; `q_init` supports warm start and `q_prev`
+  supplies the smoothness reference.
+- The only constraints are finite URDF joint-position bounds in the public
+  arm order. The objective is a soft pose, neutral-regularization, and
+  smoothness cost.
+- Zero, fixed-seed reachable random, and simultaneous dual-arm target cases
+  reported IPOPT success and limit-respecting solutions in offline tests.
+- No XR/PICO, coordinate adapter, trajectory, velocity/acceleration limit,
+  collision avoidance, torque, MuJoCo controller, model edit, or robot
+  control has been introduced.
 
 ## Hypothesis
 

@@ -402,3 +402,42 @@ agreement, and cost accounting.
 
 Stop at S1.2.0. A future explicitly scoped stage may formulate a solver, but
 this stage does not construct, configure, or invoke one.
+
+### S1.2.1 — `wheelloong_m2` offline CasADi/IPOPT dual-arm IK baseline established
+
+**Action**
+
+Added a reusable CasADi Opti/IPOPT solver over the existing named
+`q_arm(14)` interface. It calls the existing symbolic FK, reuses the S1.2.0
+symbolic pose error, accepts torso-relative Pinocchio `SE3` targets as Opti
+parameters, applies URDF position limits, and supports `q_init` warm starts.
+Added EXP-008 and deterministic numeric-FK round-trip tests.
+
+**Result**
+
+- All zero, fixed-seed legal-random, and simultaneous left/right target test
+  cases reported IPOPT success with URDF-limit-respecting solutions.
+- Recorded solve times were 0.015417 s, 0.009763 s, and 0.005229 s for 5, 12,
+  and 6 IPOPT iterations respectively.
+- The zero target returned floating-point-scale FK residuals. Random target
+  cases retained millimetre-scale position and approximately 0.02-rad
+  orientation residuals because pose tracking is a soft cost alongside
+  default nominal and smoothness regularization.
+- DEC-008 records this explicitly as an offline baseline. No XR, adapter,
+  controller, trajectory, velocity/acceleration, collision, torque,
+  URDF/MJCF edit, or robot-control work was added.
+
+**Files Changed**
+
+- src/wheelloong_m2/ik/dual_arm_ik.py
+- src/wheelloong_m2/ik/__init__.py
+- experiments/test_wheelloong_m2_ik_solver.py
+- docs/experiments/EXP-008_WHEELLOONG_M2_NLP_IK.md
+- docs/DECISIONS.md
+- docs/STATUS.md
+- docs/WORKLOG.md
+
+**Next**
+
+Stop at S1.2.1. This remains an offline pose solver; do not connect it to VR,
+MuJoCo control, or a physical robot without separately scoped work.
