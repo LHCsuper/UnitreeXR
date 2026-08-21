@@ -29,7 +29,8 @@ XRoboToolkit Pose:
 - position order = `[x, y, z]` — Experimental Evidence (EXP-002).
 - position unit = `meter` — Experimental Evidence. Consistent with meters;
   not a high-precision scale calibration.
-- quaternion order = `[qx, qy, qz, qw]` — Experimental Evidence.
+- quaternion order = `[qx, qy, qz, qw]` — Source Evidence + Experimental
+  Evidence.
 
 Tracking Origin axes (Experimental Evidence, EXP-002):
 
@@ -85,6 +86,12 @@ R[:,2] = device local +Z expressed in D
 ```
 
 `q` and `-q` represent the same orientation.
+
+## Phase 3 Dependency
+
+The XR coordinate definition is fixed at the evidence levels recorded in this
+document. The next step is Unitree frame mapping; no XR-to-robot transform is
+implied here. See `UNITREE_COORDINATE_MAPPING.md`.
 
 ## Tracking Origin
 
@@ -327,7 +334,7 @@ frame. The raw pose direction, controller local-frame convention, and
 quaternion order are the Phase 2 evidence recorded above; they do not by
 themselves establish a robot-frame calibration.
 
-### Relative controller motion
+### Initialized spatial-relative controller motion
 
 Phase 3 teleoperation does not directly map an absolute XR pose to a robot
 target. At the start of a teleoperation interaction, record:
@@ -336,20 +343,22 @@ target. At the start of a teleoperation interaction, record:
 ^D T_C(0)
 ```
 
-For the current raw pose `^D T_C(t)`, define controller motion relative to
-that initialization as:
+For the current raw pose, define spatial translation and rotation change in
+the Tracking Origin axes:
 
 ```text
-Delta T_C(t)
-=
-inverse(^D T_C(0))
-*
-^D T_C(t)
+delta p_D(t) = ^D p_C(t) - ^D p_C(0)
+delta R_D(t) = ^D R_C(t) * ^D R_C(0)^T
 ```
 
-This formulation makes the commanded motion relative to the selected start
-pose rather than to the absolute placement of `D`. A new initialization can
-therefore serve as an explicit teleoperation recentering event.
+This spatial form is intentional. A previously recorded body-relative
+expression `inverse(^D T_C(0)) * ^D T_C(t)` is superseded by DEC-014 because
+it expresses translation/rotation in the initial controller axes and requires
+an additional controller-to-EE conjugation that had not been defined.
+
+The spatial formulation makes commanded motion relative to the selected start
+pose rather than to the absolute translation of `D`. A new initialization is
+required after a tracking-origin recenter or discontinuity.
 
 ### Robot operational target formulation
 
@@ -361,24 +370,28 @@ corresponding robot pose:
 ^torso T_EE(0)
 ```
 
-The Phase 3 target formulation is:
+EXP-013 establishes the Unitree/OpenXR-to-robot proper basis rotation `S` as
+Source Evidence:
 
 ```text
-^torso T_EE(t)
-=
-^torso T_EE(0)
-*
-T_alignment
-*
-Delta T_C(t)
-*
-T_controller_to_EE
+S =
+[[ 0, 0,-1],
+ [-1, 0, 0],
+ [ 0, 1, 0]]
 ```
 
-`T_alignment` and `T_controller_to_EE` are named calibration/alignment terms,
-not measured transforms in the current project. This is a mapping contract
-for later calibration and offline validation; it does not authorize a hidden
-conversion in the raw XR acquisition layer.
+The implemented target formulation is:
+
+```text
+^torso p_EE(t) = ^torso p_EE(0) + scale * S * delta p_D(t)
+^torso R_EE(t) = S * delta R_D(t) * S^T * ^torso R_EE(0)
+```
+
+The scalar translation gain is explicit and defaults to `1.0`. Spatial
+relative rotation cancels any fixed controller-local extrinsic present in
+both initial and current samples. The implementation therefore does not claim
+that PICO/XRoboToolkit controller-local axes equal Unitree/WebXR controller
+axes.
 
 ### Confirmed raw inputs and unresolved calibration
 
@@ -388,7 +401,7 @@ The following are established only at their recorded Phase 2 evidence levels:
 2. The controller local-frame convention is documented from experiment.
 3. Raw quaternion component order is `[qx, qy, qz, qw]`.
 
-The following calibration relationships remain **Unknown**:
+The following absolute calibration relationships remain **Unknown**:
 
 ```text
 ^torso T_D
@@ -403,9 +416,11 @@ mobile-base-aware model, the corresponding future relationship is:
 ^base T_D
 ```
 
-`^C T_EE` is the controller-frame-to-operational-EE relationship. Neither
-relationship has been assigned a numeric value, and neither is implied by the
-raw SDK pose.
+`^C T_EE` is the physical controller-frame-to-operational-EE relationship.
+Neither absolute relationship has been assigned a numeric value, and neither
+is implied by the raw SDK pose. They are not required by the implemented
+initialized spatial-relative mapping, but remain necessary for any future
+absolute pose mapping or physical hand/TCP calibration claim.
 
 ### Scope and coordinate tree
 
@@ -425,6 +440,6 @@ Robot operational chain:
     torso / base  -->  operational EE
 ```
 
-These belong to Phase 3 — Unitree Coordinate Mapping. Calibration values and
-an implementation of this formulation remain outside the present document-only
-change.
+These belong to Phase 3 — Unitree Coordinate Mapping. The initialized
+spatial-relative implementation and its simulation evidence are recorded in
+EXP-014; live physical calibration remains open.

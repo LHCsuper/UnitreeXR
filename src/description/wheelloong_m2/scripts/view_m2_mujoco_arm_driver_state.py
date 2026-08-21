@@ -107,22 +107,24 @@ RIGHT_ARM_JOINTS = [
     "right_arm_joint_6",
     "right_arm_joint_7",
 ]
+# User Instruction, 2026-08-21: initial posture supplied as left/right MoveJ
+# arrays. Array index 0..6 is applied directly to named arm joint 1..7 below.
 HOME_JOINTS_RAD = {
     "left": (
-        1.5707963267948966,
-        -1.2217304763960306,
-        -1.5707963267948966,
-        -1.5707963267948966,
-        0.0,
+        -1.5707963,
+        1.2217305,
+        1.5707963,
+        -1.5707963,
+        1.5707963,
         0.0,
         0.0,
     ),
     "right": (
-        -1.5707963267948966,
-        -1.2217304763960306,
-        1.5707963267948966,
-        -1.5707963267948966,
-        0.0,
+        1.5707963,
+        1.2217305,
+        -1.5707963,
+        -1.5707963,
+        -1.5707963,
         0.0,
         0.0,
     ),

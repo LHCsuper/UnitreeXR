@@ -616,6 +616,8 @@ controller-motion formulation and recorded the architectural decision.
 
 - Raw PICO controller pose remains `^D T_C(t)`; Phase 3 targets use
   `inverse(^D T_C(0)) * ^D T_C(t)` rather than direct absolute-pose mapping.
+  This body-relative form was later superseded by the implemented spatial
+  delta formulation in DEC-014 / EXP-014.
 - The current robot-side scope is fixed-torso dual-arm operational frames;
   future waist/mobile-base work can move from `^torso T_EE` to `^base T_EE`.
 - `^torso T_D` (future `^base T_D`) and `^C T_EE` remain Unknown calibration
@@ -633,3 +635,192 @@ controller-motion formulation and recorded the architectural decision.
 
 Treat calibration and offline validation as a separately scoped Phase 3 task;
 do not infer numeric transforms from this formulation alone.
+
+### 2026-08-21 — Phase 3 started
+
+**Action**
+
+Formally documented Phase 3 — Unitree Coordinate Mapping and created its
+dedicated Unitree mapping research contract.
+
+**Result**
+
+- Phase 2 remains closed with its raw XR coordinate evidence preserved.
+- Started Unitree coordinate-mapping research focused on the mathematical
+  transform chain from XR controller pose to Unitree wrist target.
+- No robot-control implementation, coordinate-conversion code, or unverified
+  transform was added.
+
+**Next**
+
+Inspect Unitree `xr_teleoperate` source, beginning with `TeleData`,
+`TeleVuerWrapper`, and the wrist target passed to `robot_arm_ik`.
+
+### 2026-08-21 — EXP-013 Unitree source mapping and IK inspection completed
+
+**Action**
+
+Cloned the two official upstream repositories named by the project owner,
+pinned their current commits, and inspected TeleVuer coordinate conversion,
+`TeleData` wrist semantics, the teleoperation call site, and Unitree's
+Pinocchio/CasADi/IPOPT arm IK.
+
+**Result**
+
+- Recorded TeleVuer commit
+  `766de45e74373ae0ea66321d942ce538385655a5` and `xr_teleoperate` commit
+  `845b25a32f7febedf220e830952a7134897adb9d`; the latter pins the former as its
+  submodule.
+- Established Unitree's OpenXR-to-robot basis rotation as Source Evidence.
+- Confirmed that the existing `wheelloong_m2` solver already matches the
+  transferable Unitree NLP structure and objective defaults.
+- Classified Unitree waist/wrist offsets and controller-local convention as
+  upstream robot/source-specific rather than values to copy.
+- Added EXP-013 and updated the environment/mapping evidence documents.
+
+**Next**
+
+Implement a named initialized mapping that uses the evidenced basis rotation
+without assuming XRoboToolkit/PICO controller-local identity.
+
+### 2026-08-21 — Initialized spatial-relative XR adapter implemented
+
+**Action**
+
+Added `RelativeXRMapping` and `InitializedRelativeXRAdapter`. Superseded the
+earlier body-relative DEC-013 formula with the spatial-delta mapping in
+DEC-014, keeping raw SDK acquisition unchanged.
+
+**Result**
+
+- Zero motion maps exactly to the captured robot `W_L` / `W_R` anchors.
+- OpenXR `+X/+Y/+Z` deltas map to robot `-Y/+Z/-X` through the pinned Unitree
+  basis rotation.
+- Spatial rotation cancels a fixed controller-local rotational extrinsic and
+  absolute tracking-origin translation cancels through initialization.
+- Seven deterministic pytest cases pass. The globally installed ROS
+  `launch_testing` plugin is incompatible with the installed pytest version,
+  so project tests are run with `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`.
+
+**Files Changed**
+
+- `src/wheelloong_m2/xr/adapter.py`
+- `src/wheelloong_m2/xr/__init__.py`
+- `tests/test_relative_xr_adapter.py`
+- `docs/COORDINATE_SYSTEM.md`
+- `docs/DECISIONS.md`
+
+**Next**
+
+Connect the adapter to the existing named IK/MuJoCo path and validate a
+nonzero synthetic trajectory.
+
+### 2026-08-21 — EXP-014 relative XR-to-MuJoCo simulation validated
+
+**Action**
+
+Added a reusable simulation-only XR runtime, deterministic end-to-end
+experiment, and fake/live CLI. Ran the two-second synthetic trajectory and a
+separate live XRoboToolkit startup attempt.
+
+**Result**
+
+- The deterministic run completed 240 target updates, 500 IK solves, and 2000
+  MuJoCo physics steps through named arm position actuators.
+- Final target deltas were about `-30 mm` left robot Y and `+25 mm` right robot
+  Y, matching the evidenced OpenXR `X -> -robot Y` map.
+- Final left/right EE position errors were approximately `9.70 mm` and
+  `4.21 mm`; rotation errors were `0.00672 rad` and `0.00530 rad`.
+- A live three-second startup attempt connected to the local PC Service, but
+  the SDK timestamp remained non-positive. The application timed out and
+  disconnected; no fake sample replaced the unavailable device data.
+- Added EXP-014, refreshed STATUS/README, and retained the no-real-robot
+  boundary.
+
+**Files Changed**
+
+- `src/wheelloong_m2/simulation/xr_mujoco_runtime.py`
+- `experiments/test_wheelloong_m2_relative_xr_mujoco.py`
+- `experiments/run_wheelloong_m2_xr_mujoco.py`
+- `docs/experiments/EXP-014_WHEELLOONG_M2_RELATIVE_XR_MUJOCO.md`
+- `docs/STATUS.md`
+- `README.md`
+
+**Next**
+
+Start the PICO XRoboToolkit app so the SDK timestamp becomes positive, then
+run the live MuJoCo-only CLI. Do not begin real robot integration before
+tracking-loss, collision, velocity/acceleration, and hardware safety work is
+separately authorized and validated.
+
+### 2026-08-21 — Phase 3 regression completed
+
+**Action**
+
+Ran the new pytest suite plus the established Pinocchio FK, CasADi FK, SE(3)
+math, NLP IK, static MuJoCo IK, multi-rate runtime, legacy fake adapter, and
+initialized relative XR-to-MuJoCo experiments.
+
+**Result**
+
+- All invoked commands exited successfully.
+- `tests/test_relative_xr_adapter.py`: 7 passed.
+- Existing EXP-005 through EXP-011 numerical results remained consistent.
+- EXP-014 repeated the recorded target counts and final EE errors.
+- `git diff --check` passed.
+- The environment has no `black` or `ruff` executable; no formatter/linter
+  result is claimed.
+
+**Next**
+
+The only immediate device-side blocker is the non-positive XRoboToolkit SDK
+timestamp. Resume live MuJoCo validation after the PICO app provides a valid
+stream.
+
+### 2026-08-21 — EXP-015 user teleoperation initial posture integrated
+
+**Action**
+
+Recorded the owner's supplied left/right MoveJ arrays and rates, checked the
+project's motion-index/feedback mapping, validated all angles against named
+URDF limits, and integrated the posture into the MuJoCo/XR startup path.
+
+**Result**
+
+- Added one immutable posture definition in public left-then-right `q_arm`
+  order and updated the ROS arm-state viewer's local HOME display values.
+- All 14 requested values are within URDF limits.
+- Added simulation prepositioning through named position actuators only; 3000
+  settling steps reached `0.011899541117 rad` total joint tracking error.
+- A preliminary run exposed about `0.05 rad` stationary EE orientation error
+  from the old neutral regularizer. Parameterized `q_nom` and selected the
+  requested posture only in the new runtime; existing solver callers still
+  default to model neutral.
+- The final one-second relative-XR run completed 120 target updates, 250 IK
+  solves, and 1000 teleoperation physics steps. Left/right EE position errors
+  were approximately `6.38 mm`; rotation errors were about `0.01213 rad`.
+- The complete pytest suite reports 9 passed. Existing neutral IK and EXP-014
+  results remain unchanged.
+- No ROS service call or physical robot command was executed. Supplied MoveJ
+  rates are recorded but are not simulated as trajectory constraints.
+
+**Files Changed**
+
+- `src/wheelloong_m2/kinematics/postures.py`
+- `src/wheelloong_m2/kinematics/__init__.py`
+- `src/wheelloong_m2/ik/dual_arm_ik.py`
+- `src/wheelloong_m2/simulation/xr_mujoco_runtime.py`
+- `src/description/wheelloong_m2/scripts/view_m2_mujoco_arm_driver_state.py`
+- `experiments/run_wheelloong_m2_xr_mujoco.py`
+- `experiments/test_wheelloong_m2_user_initial_posture.py`
+- `tests/test_teleop_initial_posture.py`
+- `docs/experiments/EXP-015_USER_TELEOP_INITIAL_POSTURE.md`
+- `docs/DECISIONS.md`
+- `docs/STATUS.md`
+- `README.md`
+
+**Next**
+
+Use the default fake-source viewer to inspect the requested posture visually.
+Live PICO-to-MuJoCo validation still requires a positive SDK timestamp. Real
+driver commanding remains outside the current authorized scope.

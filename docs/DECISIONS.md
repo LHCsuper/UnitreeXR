@@ -353,7 +353,7 @@ into a synthetic pose.
 
 ## DEC-013 — Map teleoperation by initialized relative motion, not absolute XR pose
 
-Status: Accepted
+Status: Superseded by DEC-014
 
 ### Context
 
@@ -378,7 +378,6 @@ targets (`W_L` / `W_R`). A future waist/mobile-base scope may use
 
 ### Reason
 
-- It is conceptually consistent with Unitree-style relative teleoperation.
 - It avoids dependence on the absolute placement or recenter history of the
   XR Tracking Origin.
 - It gives recentering an explicit initialization operation.
@@ -391,3 +390,102 @@ targets (`W_L` / `W_R`). A future waist/mobile-base scope may use
 separately scoped calibration and validation effort supplies evidence. This
 decision changes documentation only: it adds no XR conversion implementation,
 IK, MuJoCo, model edit, or robot-control authority.
+
+## DEC-014 — Use initialized spatial deltas with the source-evidenced OpenXR basis
+
+Status: Accepted
+
+### Context
+
+EXP-013 established Unitree's proper OpenXR-to-robot basis rotation, but also
+showed that current TeleVuer constructs head-yaw-relative absolute wrist
+targets and assumes its controller pose already follows a Unitree arm
+initial-pose convention. This project's PICO/XRoboToolkit controller-local
+identity relative to TeleVuer remains unverified.
+
+The DEC-013 body-relative expression
+`inverse(^D T_C(0)) * ^D T_C(t)` would express motion in initial controller
+axes. Applying it to a robot target requires an additional, validated
+controller-to-EE conjugation that the project does not have.
+
+### Decision
+
+At initialization, capture each raw controller pose and the current robot
+operational pose. Compute spatial controller changes in Tracking Origin axes:
+
+```text
+delta p_D = ^D p_C(t) - ^D p_C(0)
+delta R_D = ^D R_C(t) * ^D R_C(0)^T
+```
+
+Map those deltas using Unitree's source-evidenced proper basis rotation `S`:
+
+```text
+^torso p_W(t) = ^torso p_W(0) + scale * S * delta p_D
+^torso R_W(t) = S * delta R_D * S^T * ^torso R_W(0)
+```
+
+Keep the translation scale explicit, positive, and defaulted to `1.0`. Require
+reinitialization after an XR tracking-origin recenter/discontinuity. Keep this
+logic in `InitializedRelativeXRAdapter`, never in raw acquisition.
+
+### Reason
+
+Spatial relative rotation cancels a fixed controller-local extrinsic present
+in both samples, preserves the robot's initial operational-frame orientation
+at zero motion, and uses only the OpenXR/robot basis transform established by
+source evidence. It does not import Unitree-specific waist/wrist offsets or
+assert an unverified PICO-to-WebXR controller-frame identity.
+
+### Consequence
+
+The mapping is suitable for initialized simulation teleoperation and is
+validated by EXP-014. It is not an absolute XR-to-robot calibration, physical
+controller-to-hand calibration, tracking-loss safety policy, or authority for
+real robot control.
+
+## DEC-015 — Anchor simulation and IK to the user-specified MoveJ posture
+
+Status: Accepted
+
+### Context
+
+The project owner supplied explicit seven-joint left/right `MoveJ` arrays as
+the desired robot initial posture. The checked-in motion-index map and
+arm-feedback viewer map each side's indices `0..6` directly to named arm
+joints `1..7`, without a sign conversion. The previous viewer-local HOME
+constant was different and the baseline IK nominal posture was model neutral.
+
+A preliminary simulation showed that retaining neutral regularization while
+anchoring the requested posture created about `0.05 rad` of stationary EE
+orientation residual because the soft IK objective traded pose accuracy for
+motion toward zero.
+
+### Decision
+
+Store the supplied posture and MoveJ rate values in one named, immutable
+provenance object. Use left joints followed by right joints as the established
+public `q_arm` order. Make this posture the simulation CLI default while
+retaining an explicit neutral option.
+
+Before XR initialization, validate the posture against named URDF limits,
+command it only through named MuJoCo position actuators, and advance three
+seconds of simulation settling. Do not write arm qpos directly. Use the same
+posture as the IK `q_nom` override so zero XR motion is not pulled toward model
+neutral. Keep model neutral as the solver default for existing callers.
+
+Discard any live XR readiness sample acquired before settling and anchor from
+a fresh post-settling sample.
+
+### Reason
+
+This makes the owner's initial-pose intent explicit and testable, preserves
+the selected posture in the soft IK objective, and keeps simulation state
+motion on the previously validated actuator path.
+
+### Consequence
+
+The supplied MoveJ velocity/acceleration values are provenance metadata only;
+the MuJoCo path does not claim to reproduce the ROS driver's trajectory
+profile. The service-command-to-feedback relationship is not independently
+verified, no ROS service is called, and no real robot control is added.

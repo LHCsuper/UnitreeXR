@@ -6,6 +6,36 @@ Phase 3 — Unitree Coordinate Mapping
 
 Phase 2 is closed.
 
+## Current Goal
+
+Use the completed Unitree source inspection and initialized relative adapter
+to validate live PICO controller motion in MuJoCo. No real robot integration
+is authorized.
+
+The core Phase 3 research quantity is:
+
+```text
+^base T_wrist_target
+```
+
+The following factorization is an **Unknown / Hypothesis** research
+decomposition, not a confirmed transform chain or an implementation:
+
+```text
+^base T_wrist_target
+=
+^base T_XR
+*
+^XR T_controller
+*
+^controller T_wrist
+```
+
+This factorization is retained only as a historical absolute-pose research
+decomposition. The implemented spatial-relative mapping and its evidence are
+recorded in `UNITREE_COORDINATE_MAPPING.md`, `COORDINATE_SYSTEM.md`, EXP-013,
+and EXP-014.
+
 ## Hardware
 
 VR: PICO 4 Ultra
@@ -169,8 +199,8 @@ Trial 3: 1.0421 deg
 - EXP-011 introduces an SDK-independent `XRControllerPose` contract for
   `^xr T_controller`, a fake source at the shared 120 Hz target rate, and an
   `XRAdapter` interface that emits Pinocchio robot target poses.
-- The current adapter is deliberately identity-copy only for synthetic test
-  data. It is not a PICO/XRoboToolkit/OpenXR convention, XR-to-torso
+- The original `XRAdapter` remains deliberately identity-copy only for its
+  synthetic regression test. It is not a PICO/XRoboToolkit/OpenXR convention, XR-to-torso
   calibration, controller-to-wrist transform, axis mapping, scale, or offset.
 - A 2-second fake-source integration run delivered 240 XR sample pairs through
   the adapter and S2.1 buffer, followed by 500 IK solves and 2000 physics
@@ -194,16 +224,77 @@ Trial 3: 1.0421 deg
 - No XRAdapter, coordinate transform, hand retargeting, IK, MuJoCo module,
   model file, or real robot path is modified.
 
-## Documented — Phase 3 Teleoperation Mapping Formulation
+## Established — Unitree TeleVuer / IK Source Mapping
 
-- Teleoperation targets are formulated from initialized relative controller
-  motion, `inverse(^D T_C(0)) * ^D T_C(t)`, rather than an absolute XR pose.
+- EXP-013 pins TeleVuer commit
+  `766de45e74373ae0ea66321d942ce538385655a5` and `xr_teleoperate` commit
+  `845b25a32f7febedf220e830952a7134897adb9d`.
+- Unitree's OpenXR-to-robot proper basis rotation is established as Source
+  Evidence: OpenXR `+X/+Y/+Z` maps to robot `-Y/+Z/-X`.
+- `TeleData.left_wrist_pose` / `right_wrist_pose` are head-yaw/waist-relative
+  4x4 targets passed directly to `robot_arm_ik.solve_ik`.
+- The existing `wheelloong_m2` solver matches the transferable Unitree IK
+  structure: robot-specific operational frames, independent CasADi FK,
+  current-minus-target position and SO(3)-log errors, the same default
+  objective weights, URDF bounds, IPOPT, and warm start.
+- Unitree G1/H1/H2 joint names, wrist offsets, waist offsets, controller-local
+  convention assumption, feed-forward torque, and real robot control are not
+  copied.
+
+## Established — Initialized Relative XR-to-MuJoCo Path
+
+- `InitializedRelativeXRAdapter` anchors each raw controller pose to the
+  current simulated `W_L` / `W_R` pose, then maps spatial relative translation
+  and rotation through the source-evidenced proper basis rotation.
+- Zero controller motion exactly preserves both robot operational anchors;
+  arbitrary absolute Tracking Origin translation and fixed controller-local
+  rotational extrinsics cancel in deterministic tests.
+- Seven adapter tests pass, including all three axis maps and explicit
+  translation scaling.
+- EXP-014 completes the simulation-only chain from arbitrary fake raw XR
+  poses through the relative adapter, 14-DOF IK, named MuJoCo position
+  actuators, and Pinocchio FK validation.
+- The two-second run produced 240 target updates, 500 IK solves, and 2000
+  physics steps. Final left/right EE errors were approximately `9.70 mm` /
+  `4.21 mm` and `0.00672 rad` / `0.00530 rad`.
+- A runnable CLI supports fake input and live `XRoboToolkitSource` input to
+  MuJoCo only. It never imports a robot SDK or sends a physical command.
+- A current three-second live startup attempt connected to PC Service but the
+  SDK timestamp remained non-positive, so the CLI timed out and disconnected
+  without substituting fake data. Live PICO motion remains unverified.
+
+## Implemented — Phase 3 Teleoperation Mapping Formulation
+
+- Teleoperation targets are formulated from initialized spatial translation
+  `p(t)-p(0)` and rotation `R(t)R(0)^T`, rather than an absolute XR pose.
 - The current robot-side validation scope is fixed-torso dual-arm operation
   with `^torso T_WL` / `^torso T_WR`; a future waist/mobile-base scope can use
   `^base T_EE`.
-- `^torso T_D` (future `^base T_D`) and `^C T_EE` remain Unknown calibration
-  relationships. This formulation records no numeric transform and does not
-  implement coordinate conversion.
+- Absolute `^torso T_D` (future `^base T_D`) and physical `^C T_EE` remain
+  Unknown calibration relationships. The initialized relative implementation
+  does not require them and makes no absolute calibration claim.
+
+## Established — User-Specified Teleoperation Initial Posture
+
+- EXP-015 records the owner's supplied left/right seven-joint MoveJ arrays in
+  the established public order and retains the supplied `0.5/0.5` left and
+  `0.8/0.8` right velocity/acceleration values as provenance metadata.
+- Project source maps driver feedback indices `0..6` directly to named arm
+  joints `1..7` without a sign conversion. The real service-command-to-
+  feedback path remains not independently exercised.
+- All 14 requested joint values are inside named URDF limits.
+- The MuJoCo CLI now defaults to this posture, commands it only through named
+  position actuators, settles for 3000 physics steps, and anchors XR from the
+  post-settling state. Model-neutral startup remains explicit via
+  `--initial-posture neutral`.
+- The IK solver retains model neutral by default but accepts a limit-validated
+  `q_nom` override; the XR simulation supplies the requested posture so the
+  soft regularizer does not pull stationary targets toward zero.
+- The recorded three-second preposition reached `0.0118995 rad` total joint
+  error. The following one-second XR/IK simulation ended at about `6.38 mm`
+  position and `0.01213 rad` rotation error for each arm.
+- Nine unit tests and the prior neutral-posture IK/EXP-014 regressions pass.
+- No ROS service call or real robot command was executed.
 
 ## Hypothesis
 
@@ -218,8 +309,11 @@ vertical reference.
 ## Not Yet Verified
 
 - Precise Head local physical-frame calibration (if later required).
-- XRoboToolkit → Unitree coordinate mapping.
-- `^torso T_D` (future `^base T_D`).
-- `^C T_EE`.
-- Offline Unitree wrist-target validation.
+- Absolute `^torso T_D` (future `^base T_D`).
+- Physical `^C T_EE` calibration.
+- Live PICO/XRoboToolkit → relative adapter → MuJoCo motion validation.
+- Tracking-loss and Home-recenter handling beyond required reinitialization.
+- Collision avoidance and task-specific translation gain validation.
+- Real `/arm_driver/joint_move` command-to-feedback equivalence for the
+  supplied arrays; only the checked-in feedback-to-model map is established.
 - Real robot integration.

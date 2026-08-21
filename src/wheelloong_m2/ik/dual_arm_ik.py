@@ -20,17 +20,30 @@ class WheelloongM2DualArmIK:
 
     The optimization variable has the sole public ``ARM_JOINT_NAMES`` order.
     All targets are ``^torso T_W`` Pinocchio ``SE3`` values supplied at solve
-    time. This class has no robot, XR, trajectory, or controller interface.
+    time. ``q_nom`` defaults to model neutral and may be explicitly set to a
+    validated task posture. This class has no robot, XR, trajectory, or
+    controller interface.
     """
 
-    def __init__(self, weights: IKWeights | None = None) -> None:
+    def __init__(
+        self,
+        weights: IKWeights | None = None,
+        q_nom: np.ndarray | None = None,
+    ) -> None:
         self.weights = IKWeights() if weights is None else weights
         if not isinstance(self.weights, IKWeights):
             raise TypeError("weights must be an IKWeights instance or None")
 
         self.symbolic_kinematics = WheelloongM2CasadiKinematics()
-        self.q_nom = self._neutral_arm_configuration()
         self.q_limits = arm_joint_limits(self.symbolic_kinematics.numeric_model)
+        if q_nom is None:
+            self.q_nom = self._neutral_arm_configuration()
+        else:
+            self.q_nom = self._validate_q("q_nom", q_nom).copy()
+            if np.any(self.q_nom < self.q_limits[:, 0]) or np.any(
+                self.q_nom > self.q_limits[:, 1]
+            ):
+                raise ValueError("q_nom violates at least one URDF joint limit")
 
         self.opti = ca.Opti()
         self.q = self.opti.variable(len(ARM_JOINT_NAMES))
@@ -129,9 +142,9 @@ class WheelloongM2DualArmIK:
         """Solve the constrained offline dual-arm pose problem.
 
         ``q_init`` seeds IPOPT. ``q_prev`` supplies the smoothness term and
-        defaults to the neutral arm pose; when no explicit seed is provided,
-        the same ``q_prev`` is used as the warm-start seed. The returned
-        values are plain Python/Numpy data, never CasADi objects.
+        defaults to this solver's nominal arm pose; when no explicit seed is
+        provided, the same ``q_prev`` is used as the warm-start seed. The
+        returned values are plain Python/Numpy data, never CasADi objects.
         """
         left_position, left_rotation = self._target_components("left_target_pose", left_target_pose)
         right_position, right_rotation = self._target_components("right_target_pose", right_target_pose)

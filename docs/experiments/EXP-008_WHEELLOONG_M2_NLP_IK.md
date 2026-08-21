@@ -78,10 +78,13 @@ J_smooth = ws * ||q - q_prev||^2
 J_total  = J_pose + J_reg + J_smooth
 ```
 
-`q_nom` is extracted from Pinocchio's neutral full configuration through the
-existing named arm mapping. The pose objective is intentionally a soft cost,
-not an equality constraint; regularization and smoothness can therefore trade
-small pose residuals for a preferred arm configuration.
+By default, `q_nom` is extracted from Pinocchio's neutral full configuration
+through the existing named arm mapping. EXP-015 later adds an optional,
+limit-validated constructor override so a simulation runtime can explicitly
+select a task posture; the default and the recorded EXP-008 results remain
+unchanged. The pose objective is intentionally a soft cost, not an equality
+constraint; regularization and smoothness can therefore trade small pose
+residuals for a preferred arm configuration.
 
 ## Constraints
 
