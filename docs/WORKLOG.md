@@ -603,3 +603,33 @@ pose logger with optional interactive Pose A/B capture.
 The source can be rerun after the PICO XRoboToolkit app produces a nonzero
 timestamp. Do not use its raw output for robot targets until a separately
 scoped coordinate-mapping stage.
+
+### Documentation Track — Phase 3 teleoperation coordinate mapping refined
+
+**Action**
+
+Retained the historical absolute XR-to-wrist chain in the coordinate document
+and marked it deprecated/incomplete. Added the Phase 3 initialized-relative
+controller-motion formulation and recorded the architectural decision.
+
+**Result**
+
+- Raw PICO controller pose remains `^D T_C(t)`; Phase 3 targets use
+  `inverse(^D T_C(0)) * ^D T_C(t)` rather than direct absolute-pose mapping.
+- The current robot-side scope is fixed-torso dual-arm operational frames;
+  future waist/mobile-base work can move from `^torso T_EE` to `^base T_EE`.
+- `^torso T_D` (future `^base T_D`) and `^C T_EE` remain Unknown calibration
+  relationships. No numeric calibration or coordinate-conversion code was
+  added.
+
+**Files Changed**
+
+- docs/COORDINATE_SYSTEM.md
+- docs/DECISIONS.md
+- docs/STATUS.md
+- docs/WORKLOG.md
+
+**Next**
+
+Treat calibration and offline validation as a separately scoped Phase 3 task;
+do not infer numeric transforms from this formulation alone.

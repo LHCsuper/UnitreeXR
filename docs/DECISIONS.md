@@ -350,3 +350,44 @@ S3.1 does not define a robot-frame transform, controller offset, scale,
 calibration, hand retargeting, or physical-control path. A zero/unchanging
 SDK timestamp is reported as unavailable tracking data rather than converted
 into a synthetic pose.
+
+## DEC-013 — Map teleoperation by initialized relative motion, not absolute XR pose
+
+Status: Accepted
+
+### Context
+
+Phase 2 established the raw PICO/XRoboToolkit controller-pose contract
+`^D T_C(t)`, but it did not calibrate a relationship between the XR Tracking
+Origin, a controller, and the robot operational EE frames. An earlier
+historical absolute-pose chain was insufficient because it had no
+initialization pose, relative-motion definition, or measured calibration.
+
+### Decision
+
+For teleoperation mapping, capture controller and robot operational EE poses
+at initialization, derive controller motion as
+`inverse(^D T_C(0)) * ^D T_C(t)`, and apply that relative motion to the
+initialized robot target through explicitly named alignment and
+controller-to-EE calibration terms. Do not directly map an absolute XR pose
+to an absolute robot target.
+
+The current robot-side scope uses fixed-torso `^torso T_EE` operational
+targets (`W_L` / `W_R`). A future waist/mobile-base scope may use
+`^base T_EE` while preserving the same relative-motion principle.
+
+### Reason
+
+- It is conceptually consistent with Unitree-style relative teleoperation.
+- It avoids dependence on the absolute placement or recenter history of the
+  XR Tracking Origin.
+- It gives recentering an explicit initialization operation.
+- It permits a future mobile-base extension without changing the raw XR pose
+  contract.
+
+### Consequence
+
+`^torso T_D` (and future `^base T_D`) plus `^C T_EE` remain Unknown until a
+separately scoped calibration and validation effort supplies evidence. This
+decision changes documentation only: it adds no XR conversion implementation,
+IK, MuJoCo, model edit, or robot-control authority.

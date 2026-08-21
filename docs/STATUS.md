@@ -194,6 +194,17 @@ Trial 3: 1.0421 deg
 - No XRAdapter, coordinate transform, hand retargeting, IK, MuJoCo module,
   model file, or real robot path is modified.
 
+## Documented — Phase 3 Teleoperation Mapping Formulation
+
+- Teleoperation targets are formulated from initialized relative controller
+  motion, `inverse(^D T_C(0)) * ^D T_C(t)`, rather than an absolute XR pose.
+- The current robot-side validation scope is fixed-torso dual-arm operation
+  with `^torso T_WL` / `^torso T_WR`; a future waist/mobile-base scope can use
+  `^base T_EE`.
+- `^torso T_D` (future `^base T_D`) and `^C T_EE` remain Unknown calibration
+  relationships. This formulation records no numeric transform and does not
+  implement coordinate conversion.
+
 ## Hypothesis
 
 PICO Runtime may use gravity-related inertial information as an important
@@ -208,7 +219,7 @@ vertical reference.
 
 - Precise Head local physical-frame calibration (if later required).
 - XRoboToolkit → Unitree coordinate mapping.
-- `^base T_xr`.
-- `^controller T_wrist`.
+- `^torso T_D` (future `^base T_D`).
+- `^C T_EE`.
 - Offline Unitree wrist-target validation.
 - Real robot integration.

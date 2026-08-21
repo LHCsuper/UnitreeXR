@@ -287,7 +287,11 @@ Still unresolved:
 ^controller T_wrist
 ```
 
-The next-phase core relationship:
+### Deprecated / incomplete formulation (historical)
+
+The following relationship was retained from the Phase 2 boundary as a
+historical starting point. It is **deprecated / incomplete** and must not be
+used as the Phase 3 teleoperation mapping:
 
 ```text
 ^base T_wrist_target
@@ -299,4 +303,128 @@ The next-phase core relationship:
 ^controller T_wrist
 ```
 
-These belong to Phase 3 — Unitree Coordinate Mapping.
+It is incomplete because it omits:
+
+1. the controller pose captured at teleoperation initialization;
+2. relative-motion mapping from that initialized pose; and
+3. explicit, measured calibration transforms.
+
+In particular, directly treating an absolute tracking-origin pose as an
+absolute robot target makes the result depend on where the XR Tracking Origin
+was placed or most recently recentered.
+
+## Phase 3 Teleoperation Coordinate Mapping
+
+Phase 2 established the raw controller-pose contract. For either controller
+`C`, the raw PICO/XRoboToolkit pose at time `t` is:
+
+```text
+^D T_C(t)
+```
+
+where `D` is the PICO Device Tracking Origin and `C` is the controller local
+frame. The raw pose direction, controller local-frame convention, and
+quaternion order are the Phase 2 evidence recorded above; they do not by
+themselves establish a robot-frame calibration.
+
+### Relative controller motion
+
+Phase 3 teleoperation does not directly map an absolute XR pose to a robot
+target. At the start of a teleoperation interaction, record:
+
+```text
+^D T_C(0)
+```
+
+For the current raw pose `^D T_C(t)`, define controller motion relative to
+that initialization as:
+
+```text
+Delta T_C(t)
+=
+inverse(^D T_C(0))
+*
+^D T_C(t)
+```
+
+This formulation makes the commanded motion relative to the selected start
+pose rather than to the absolute placement of `D`. A new initialization can
+therefore serve as an explicit teleoperation recentering event.
+
+### Robot operational target formulation
+
+Let `EE` denote the robot-side logical operational frame: `W_L` for the left
+arm and `W_R` for the right arm. At teleoperation initialization, record the
+corresponding robot pose:
+
+```text
+^torso T_EE(0)
+```
+
+The Phase 3 target formulation is:
+
+```text
+^torso T_EE(t)
+=
+^torso T_EE(0)
+*
+T_alignment
+*
+Delta T_C(t)
+*
+T_controller_to_EE
+```
+
+`T_alignment` and `T_controller_to_EE` are named calibration/alignment terms,
+not measured transforms in the current project. This is a mapping contract
+for later calibration and offline validation; it does not authorize a hidden
+conversion in the raw XR acquisition layer.
+
+### Confirmed raw inputs and unresolved calibration
+
+The following are established only at their recorded Phase 2 evidence levels:
+
+1. `^D T_C(t)` is the PICO/XRoboToolkit raw controller pose.
+2. The controller local-frame convention is documented from experiment.
+3. Raw quaternion component order is `[qx, qy, qz, qw]`.
+
+The following calibration relationships remain **Unknown**:
+
+```text
+^torso T_D
+^C T_EE
+```
+
+`^torso T_D` expresses the current robot-reference-to-Tracking-Origin
+relationship. If the robot reference later expands from a fixed torso to a
+mobile-base-aware model, the corresponding future relationship is:
+
+```text
+^base T_D
+```
+
+`^C T_EE` is the controller-frame-to-operational-EE relationship. Neither
+relationship has been assigned a numeric value, and neither is implied by the
+raw SDK pose.
+
+### Scope and coordinate tree
+
+The current validation scope is fixed-torso, dual-arm teleoperation, so the
+robot target is written as `^torso T_EE`. Future waist or mobile-base work can
+use `^base T_EE` without changing the raw XR contract.
+
+```text
+PICO raw tracking:
+    D  -->  C
+
+Calibration (Unknown):
+    D  -->  torso / base
+    C  -->  operational EE
+
+Robot operational chain:
+    torso / base  -->  operational EE
+```
+
+These belong to Phase 3 — Unitree Coordinate Mapping. Calibration values and
+an implementation of this formulation remain outside the present document-only
+change.
